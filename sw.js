@@ -1,6 +1,6 @@
 /* Çevrimdışı kullanım: önce ağ, olmazsa önbellek. */
-const CACHE = 'bahce-v1';
-const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png'];
+const CACHE = 'atolye-v2';
+const SHELL = ['./', 'index.html', 'styles.css', 'vase.js', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

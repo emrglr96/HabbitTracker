@@ -1,14 +1,16 @@
-# Ceyda'nın Bahçesi
+# Ceyda'nın Atölyesi
 
-Alışkanlık, hobi ve görev takibi için telefona uygun, oyunlaştırılmış küçük bir web uygulaması.
+Alışkanlık, hobi ve görev takibi için telefona uygun, oyunlaştırılmış bir web uygulaması.
 
-- **Bugün:** günün alışkanlıkları, sayaçlar, alevli seri göstergesi ve günün görevleri
-- **Alışkanlık:** alışkanlıklar ve hobiler; her gün, belirli günler ya da haftada N kez
+Fikir: her gün çömlekçi çarkında bir halka döner. Gün ne kadar doluysa halka o kadar geniş olur. Ay bitince ortaya üç boyutlu bir vazo çıkar; silüeti o ayın grafiğidir. Kaçan gün çatlak bırakır, geri dönünce altınla onarılır (kintsugi). Seri alevi fırının ateşidir.
+
+- **Bugün:** çarkta dönen vazo, günün alışkanlıkları, sayaçlar ve görevler
+- **Alışkanlık:** her gün, belirli günler ya da haftada N kez; alışkanlık ve hobi ayrımı
 - **Görevler:** tarihli ya da tarihsiz yapılacaklar, büyüklüğüne göre XP
-- **Analiz:** haftalık ve aylık tamamlama oranı, takvim ısı haritası, alışkanlık karnesi
-- **Bahçem:** seviye, büyüyen bitki, rozetler, tema ve yedekleme
+- **Analiz:** haftalık ve aylık tamamlama, takvim ısı haritası, alışkanlık karnesi
+- **Atölye:** vazo, raf (geçmiş ayların vazoları), sır renkleri, unvanlar, rozetler, yedekleme
 
-Derleme adımı yok; düz HTML, CSS ve JavaScript. Veriler yalnızca cihazdaki tarayıcı depolamasında tutulur.
+Derleme adımı yok; düz HTML, CSS ve JavaScript. Vazo `vase.js` içinde WebGL ile çizilir. Veriler yalnızca cihazdaki tarayıcı depolamasında tutulur.
 
 ## Yerelde çalıştırma
 

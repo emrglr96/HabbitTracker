@@ -2,6 +2,6 @@
   "cleanUrls": true,
   "headers": [
     { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
-    { "source": "/(app.js|styles.css|index.html)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    { "source": "/(app.js|vase.js|styles.css|index.html)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
   ]
 }

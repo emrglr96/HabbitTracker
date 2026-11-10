@@ -1,4 +1,4 @@
-/* Ceyda'nın Bahçesi — alışkanlık ve görev takibi. Veriler yalnızca bu cihazda saklanır. */
+/* Ceyda'nın Atölyesi: alışkanlık ve görev takibi. Veriler yalnızca bu cihazda saklanır. */
 (() => {
 'use strict';
 
@@ -48,20 +48,32 @@ const STARTERS = [
   { emoji: '🪴', name: 'Çiçekleri sula', color: 0, kind: 'hobby', freq: { type: 'weekly', times: 2 }, target: 1, unit: '' },
 ];
 
-// Bitkinin büyüme aşamaları: hangi seviyede hangi görünüme geçer
-const STAGES = [
-  { lvl: 1, name: 'Tohum' },
-  { lvl: 2, name: 'Filiz' },
-  { lvl: 4, name: 'Fidan' },
-  { lvl: 7, name: 'Tomurcuk' },
-  { lvl: 10, name: 'Çiçek' },
-  { lvl: 15, name: 'Çiçek Öbeği' },
-  { lvl: 22, name: 'Meyve Ağacı' },
-  { lvl: 30, name: 'Masal Ağacı' },
+// Zanaat unvanları: hangi seviyede hangi unvan
+const RANKS = [
+  { lvl: 1, name: 'Çırak' },
+  { lvl: 3, name: 'Kalfa' },
+  { lvl: 6, name: 'Usta' },
+  { lvl: 10, name: 'Nakkaş' },
+  { lvl: 15, name: 'Başusta' },
+  { lvl: 22, name: 'Üstat' },
+  { lvl: 30, name: 'Pîr' },
 ];
+// Sırlar: vazonun ana rengi. Unvan yükseldikçe yenileri açılır.
+const GLAZES = [
+  { id: 'sedef', name: 'Sedef', lvl: 1, rgb: [0.93, 0.91, 0.85] },
+  { id: 'seladon', name: 'Seladon', lvl: 3, rgb: [0.6, 0.76, 0.66] },
+  { id: 'turkuaz', name: 'Turkuaz', lvl: 6, rgb: [0.1, 0.58, 0.6] },
+  { id: 'kobalt', name: 'Kobalt', lvl: 10, rgb: [0.15, 0.26, 0.62] },
+  { id: 'mercan', name: 'Mercan', lvl: 15, rgb: [0.8, 0.28, 0.2] },
+  { id: 'gece', name: 'Gece', lvl: 22, rgb: [0.11, 0.1, 0.14] },
+  { id: 'yaldiz', name: 'Yaldız', lvl: 30, rgb: [0.8, 0.62, 0.25] },
+];
+// Alışkanlık renklerinin vazoya karışan koyu tonları
+const DEEP = [[0.5, 0.69, 0.41], [0.36, 0.66, 0.79], [0.9, 0.73, 0.24], [0.93, 0.56, 0.33], [0.9, 0.48, 0.56], [0.62, 0.48, 0.85], [0.3, 0.71, 0.63], [0.73, 0.52, 0.34]];
+const css = (rgb) => `rgb(${rgb.map((v) => Math.round(v * 255)).join(',')})`;
 
 const BADGES = [
-  { id: 'first', icon: '🌱', name: 'İlk Adım', desc: 'İlk alışkanlığını tamamla', test: (c) => c.totalDone >= 1 },
+  { id: 'first', icon: '🏺', name: 'İlk Halka', desc: 'İlk alışkanlığını tamamla', test: (c) => c.totalDone >= 1 },
   { id: 'todo1', icon: '✅', name: 'Bir Çizik', desc: 'İlk görevini bitir', test: (c) => c.todosDone >= 1 },
   { id: 'perfect1', icon: '🌟', name: 'Kusursuz Gün', desc: 'Bir günde hepsini tamamla', test: (c) => c.perfectDays >= 1 },
   { id: 's3', icon: '✨', name: 'Kıvılcım', desc: '3 günlük seri', test: (c) => c.bestStreak >= 3 },
@@ -74,12 +86,13 @@ const BADGES = [
   { id: 'd250', icon: '💯', name: 'Durdurulamaz', desc: '250 alışkanlık tamamla', test: (c) => c.totalDone >= 250 },
   { id: 'todo25', icon: '🏹', name: 'Görev Avcısı', desc: '25 görev bitir', test: (c) => c.todosDone >= 25 },
   { id: 'hobby10', icon: '🎨', name: 'Hobi Sever', desc: 'Hobilerine 10 kez vakit ayır', test: (c) => c.hobbyDone >= 10 },
-  { id: 'l5', icon: '🌿', name: 'Yeşil Parmak', desc: '5. seviyeye ulaş', test: (c) => c.level >= 5 },
-  { id: 'l10', icon: '🌸', name: 'Çiçek Açtı', desc: '10. seviyeye ulaş', test: (c) => c.level >= 10 },
+  { id: 'kintsugi', icon: '⚜️', name: 'Altın Damar', desc: 'Kaçan bir günden sonra geri dön', test: (c) => c.goldSeams >= 1 },
+  { id: 'l5', icon: '🤲', name: 'Eli Kile Yatkın', desc: '5. seviyeye ulaş', test: (c) => c.level >= 5 },
+  { id: 'l10', icon: '🖌️', name: 'Nakkaş Mührü', desc: '10. seviyeye ulaş', test: (c) => c.level >= 10 },
 ];
 
 /* ================= durum ================= */
-const blank = () => ({ v: 1, name: 'Ceyda', habits: [], todos: [], xpBank: 0, celebratedLevel: 1, badges: {}, theme: 'auto', onboarded: false });
+const blank = () => ({ v: 1, name: 'Ceyda', habits: [], todos: [], xpBank: 0, celebratedLevel: 1, badges: {}, glazes: {}, seenMonth: '', theme: 'auto', onboarded: false });
 
 function normalize(raw) {
   const s = Object.assign(blank(), raw && typeof raw === 'object' ? raw : {});
@@ -100,6 +113,8 @@ function normalize(raw) {
     done: !!t.done, doneAt: t.done ? (t.doneAt || dkey(today())) : null, createdAt: t.createdAt || dkey(today()),
   }));
   s.badges = s.badges && typeof s.badges === 'object' ? s.badges : {};
+  s.glazes = s.glazes && typeof s.glazes === 'object' ? s.glazes : {};
+  s.seenMonth = typeof s.seenMonth === 'string' ? s.seenMonth : '';
   s.xpBank = Math.max(0, s.xpBank | 0);
   s.celebratedLevel = Math.max(1, s.celebratedLevel | 0);
   s.name = String(s.name || 'Ceyda').slice(0, 24);
@@ -118,7 +133,7 @@ function save() {
 }
 
 let S = load();
-const ui = { tab: 'today', day: today(), statsMode: 'week', statsOff: 0, pick: null, showDone: false, flash: null };
+const ui = { tab: 'today', day: today(), statsMode: 'week', statsOff: 0, pick: null, showDone: false, flash: null, vaseYm: null };
 let memo = null;
 let draft = null;
 
@@ -200,11 +215,13 @@ function levelInfo(xp) {
   const base = needFor(level), next = needFor(level + 1);
   return { level, into: xp - base, span: next - base, pct: (xp - base) / (next - base), left: next - xp };
 }
-function stageOf(level) {
+function rankOf(level) {
   let i = 0;
-  STAGES.forEach((s, idx) => { if (level >= s.lvl) i = idx; });
+  RANKS.forEach((r, idx) => { if (level >= r.lvl) i = idx; });
   return i;
 }
+const ymOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+const kilnTemp = (streak) => (streak > 0 ? Math.min(1280, 560 + streak * 36) : 0);
 
 function derive() {
   if (memo) return memo;
@@ -224,13 +241,14 @@ function derive() {
   // Kusursuz günler: o gün beklenen bütün alışkanlıklar tamam
   const fixed = S.habits.filter((h) => !isWeekly(h));
   const perfect = new Set();
-  let bestPerfectRun = 0, run = 0;
+  let bestPerfectRun = 0, run = 0, goldSeams = 0, pendingMiss = 0;
   if (fixed.length) {
     const first = fixed.reduce((m, h) => (h.createdAt < m ? h.createdAt : m), tk);
     for (let d = parse(first); d <= t; d = addDays(d, 1)) {
       const k = dkey(d);
       const sc = fixed.filter((h) => isSched(h, d));
       if (!sc.length) continue;
+      if (active.has(k)) { goldSeams += pendingMiss; pendingMiss = 0; } else if (k !== tk) pendingMiss++;
       if (sc.every((h) => isDone(h, k))) { perfect.add(k); add(k, XP_PERFECT); run++; bestPerfectRun = Math.max(bestPerfectRun, run); }
       else if (k !== tk) run = 0;
     }
@@ -257,7 +275,7 @@ function derive() {
   const lvl = levelInfo(total);
   memo = {
     xp, total, lvl, perfect, streak, litToday: active.has(tk),
-    ctx: { totalDone, hobbyDone, bestStreak, perfectDays: perfect.size, bestPerfectRun, todosDone, level: lvl.level },
+    ctx: { totalDone, hobbyDone, bestStreak, perfectDays: perfect.size, bestPerfectRun, todosDone, goldSeams, level: lvl.level },
   };
   return memo;
 }
@@ -351,57 +369,79 @@ function flame(size, lit, animate) {
   return `<svg class="flame ${lit ? (animate ? 'lit' : '') : 'off'}" viewBox="0 0 24 28" width="${size}" height="${Math.round(size * 28 / 24)}" aria-hidden="true"><path class="f-out" d="M12 1c1 5 7 8 7 16a7 7 0 0 1-14 0c0-4 2-6 3-9 1 2 2 3 3 3 0-4 0-7 1-10z"/><path class="f-in" d="M12 13c1 3 3.500 4 3.500 7a3.500 3.500 0 0 1-7 0c0-2 1.500-3 3.500-7z"/></svg>`;
 }
 
-function plantSVG(stage, happy) {
-  const leaf = (x, y, ang, s, side) => `<path d="M0 0C4-9 14-11 20-5C15 3 6 5 0 0Z" transform="translate(${x} ${y}) scale(${side * s} ${s}) rotate(${ang})" fill="var(--leaf-art)"/>`;
-  const flower = (x, y, r, c) => {
-    let p = '';
-    for (let i = 0; i < 5; i++) {
-      const a = ((i * 72 - 90) * Math.PI) / 180;
-      p += `<circle cx="${(x + Math.cos(a) * r).toFixed(1)}" cy="${(y + Math.sin(a) * r).toFixed(1)}" r="${(r * 0.72).toFixed(1)}" fill="${c}"/>`;
+/* ================= vazo ================= */
+// Bir ayın günlerinden vazo modeli: her gün bir halka.
+function vaseModel(y, m) {
+  const t = today(), D = derive();
+  const n = new Date(y, m + 1, 0).getDate();
+  const cur = y === t.getFullYear() && m === t.getMonth();
+  const upto = new Date(y, m, 1) > t ? 0 : cur ? t.getDate() : n;
+  const ym = `${y}-${pad(m + 1)}`;
+  const glaze = GLAZES.find((g) => g.id === S.glazes[ym]) || GLAZES[0];
+  const rings = [];
+  let lastActive = -1, sumRate = 0, rated = 0;
+  for (let i = 0; i < upto; i++) {
+    const d = new Date(y, m, i + 1), k = dkey(d);
+    let sched = 0, done = 0;
+    const mix = [0, 0, 0];
+    for (const h of S.habits) {
+      const dn = isDone(h, k);
+      if (isWeekly(h)) { if (dn) sched++; } else if (isSched(h, d)) sched++;
+      if (dn) { done++; const c = DEEP[h.color]; mix[0] += c[0]; mix[1] += c[1]; mix[2] += c[2]; }
     }
-    return p + `<circle cx="${x}" cy="${y}" r="${(r * 0.55).toFixed(1)}" fill="var(--gold)"/>`;
-  };
-  const stem = (d, w = 3) => `<path d="${d}" fill="none" stroke="var(--leaf-art-deep)" stroke-width="${w}" stroke-linecap="round"/>`;
-  const spark = (x, y, s) => `<path d="M0-5C.6-1.500 1.500-.6 5 0C1.500.6.6 1.500 0 5C-.6 1.500-1.500.6-5 0C-1.500-.6-.6-1.500 0-5Z" transform="translate(${x} ${y}) scale(${s})" fill="var(--gold)"/>`;
-  const PINK = '#F29BB0', LILAC = '#C7A6EA', PEACH = '#F7A975', TRUNK = '#9A6B4B';
-  let g = '';
-  if (stage === 0) {
-    g = `<ellipse cx="60" cy="82" rx="5.500" ry="4" fill="#B98556"/>` + stem('M61 80q1-4 4-5', 2.200);
-  } else if (stage === 1) {
-    g = stem('M60 84C60 79 60 75 60 71') + leaf(60, 72, -28, 0.6, 1) + leaf(60, 72, -28, 0.6, -1);
-  } else if (stage === 2) {
-    g = stem('M60 84C61 76 59 68 60 59') + leaf(60, 77, -15, 0.72, 1) + leaf(60, 71, -20, 0.78, -1) + leaf(60, 60, -42, 0.62, 1) + leaf(60, 60, -42, 0.62, -1);
-  } else if (stage === 3) {
-    g = stem('M60 84C61 74 59 62 60 50') + leaf(60, 78, -12, 0.8, 1) + leaf(60, 71, -18, 0.85, -1) + leaf(60, 63, -25, 0.72, 1) + leaf(60, 56, -30, 0.62, -1)
-      + `<ellipse cx="60" cy="44" rx="5.500" ry="7.500" fill="${PINK}"/><path d="M54.500 47q5.500 6 11 0q-1 5-5.500 5t-5.500-5z" fill="var(--leaf-art-deep)"/>`;
-  } else if (stage === 4) {
-    g = stem('M60 84C61 74 59 62 60 48') + leaf(60, 78, -12, 0.85, 1) + leaf(60, 71, -18, 0.9, -1) + leaf(60, 63, -25, 0.75, 1) + leaf(60, 57, -30, 0.65, -1) + flower(60, 41, 8, PINK);
-  } else if (stage === 5) {
-    g = stem('M60 84C61 72 59 58 60 42') + stem('M59 84C54 74 46 66 42 56', 2.600) + stem('M61 84C66 74 74 64 79 54', 2.600)
-      + leaf(60, 76, -10, 0.8, 1) + leaf(60, 70, -14, 0.85, -1) + leaf(50, 70, -40, 0.6, -1) + leaf(71, 68, -40, 0.6, 1) + leaf(60, 58, -30, 0.6, 1)
-      + flower(60, 36, 8, PINK) + flower(41, 50, 6.500, LILAC) + flower(80, 48, 6.500, PEACH);
-  } else {
-    const fruit = stage === 6 ? 'var(--flame)' : 'var(--gold)';
-    g = `<path d="M56 84C57 74 57 66 55 56h10C63 66 63 74 64 84z" fill="${TRUNK}"/>`
-      + `<circle cx="43" cy="50" r="15" fill="var(--leaf-art-deep)"/><circle cx="77" cy="50" r="15" fill="var(--leaf-art-deep)"/><circle cx="60" cy="36" r="21" fill="var(--leaf-art)"/><circle cx="46" cy="47" r="13" fill="var(--leaf-art)"/><circle cx="75" cy="47" r="13" fill="var(--leaf-art)"/>`
-      + [[50, 34], [68, 30], [40, 50], [79, 51], [61, 47]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.400" fill="${fruit}"/>`).join('');
-    if (stage >= 7) {
-      g += flower(57, 24, 4.200, PINK) + flower(72, 41, 4, PINK) + flower(45, 41, 4, PINK) + flower(84, 44, 3.600, LILAC)
-        + spark(27, 30, 0.9) + spark(95, 24, 1.100) + spark(100, 62, 0.7) + spark(22, 64, 0.7);
-    }
+    const isT = cur && i === upto - 1;
+    const rate = sched ? Math.min(1, done / sched) : null;
+    const col = done ? glaze.rgb.map((g, q) => g * 0.74 + (mix[q] / done) * 0.26) : glaze.rgb.slice();
+    const missed = sched > 0 && done === 0 && !isT;
+    if (done) lastActive = i;
+    if (rate != null && !(isT && !done)) { sumRate += rate; rated++; }
+    rings.push({ f: rate == null ? null : missed ? 0.05 : rate, col, missed, perfect: D.perfect.has(k), wet: isT, gold: false, open: false });
   }
-  const eyes = happy
-    ? '<path d="M50.500 103q2.500-3.200 5 0M64.500 103q2.500-3.200 5 0" fill="none" stroke="var(--face)" stroke-width="1.800" stroke-linecap="round"/>'
-    : '<circle cx="53" cy="102.500" r="2" fill="var(--face)"/><circle cx="67" cy="102.500" r="2" fill="var(--face)"/>';
-  return `<svg viewBox="0 0 120 124" role="img" aria-label="Bitki: ${STAGES[stage].name}">
-    <g class="sway">${g}</g>
-    <ellipse cx="60" cy="85" rx="19" ry="3.600" fill="var(--soil)"/>
-    <path d="M42 92h36l-4.600 23.500a4 4 0 0 1-3.900 3.200H50.500a4 4 0 0 1-3.900-3.200z" fill="var(--pot)"/>
-    <rect x="38" y="84.500" width="44" height="9.500" rx="4.500" fill="var(--pot-deep)"/>
-    ${eyes}
-    <path d="M57 106.500q3 2.600 6 0" fill="none" stroke="var(--face)" stroke-width="1.800" stroke-linecap="round"/>
-    <circle cx="48.500" cy="107" r="2.800" fill="#F6A9A0" opacity=".75"/><circle cx="71.500" cy="107" r="2.800" fill="#F6A9A0" opacity=".75"/>
-  </svg>`;
+  let gold = 0, open = 0, perfect = 0;
+  rings.forEach((r, i) => {
+    if (r.missed) { if (i < lastActive) { r.gold = true; gold++; } else { r.open = true; open++; } }
+    if (r.perfect) perfect++;
+  });
+  const shape = (y * 12 + m) % window.Vase.shapes.length;
+  return { n, shape, rings, ym, glaze, gold, open, perfect, cur, upto, rate: rated ? sumRate / rated : null, has: lastActive >= 0, title: `${MONTHS[m]} ${y}`, shapeName: window.Vase.shapes[shape] };
+}
+const curModel = () => { const t = today(); return vaseModel(t.getFullYear(), t.getMonth()); };
+function isDark() {
+  const a = document.documentElement.getAttribute('data-theme');
+  return a ? a === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+}
+const fireLevel = (streak) => (streak > 0 ? 0.22 + 0.78 * Math.min(1, streak / 21) : 0);
+
+const thumbCache = {};
+function thumbFor(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  const model = vaseModel(y, m - 1), dark = isDark();
+  const key = ym + (dark ? 'd' : 'l') + model.glaze.id + model.rings.map((r) => `${r.f == null ? 'n' : Math.round(r.f * 20)}${r.gold ? 'g' : r.open ? 'o' : ''}${r.perfect ? 'p' : ''}${r.wet ? 'w' : ''}${Math.round(r.col[0] * 30)}${Math.round(r.col[2] * 30)}`).join('.');
+  if (!thumbCache[key]) thumbCache[key] = window.Vase.thumb(model, 224, 292, { dark, fire: 0 });
+  return thumbCache[key];
+}
+// Çizimden sonra: vazoyu sahneye yerleştir, küçük resimleri doldur
+function mountVase() {
+  if (!window.Vase) return;
+  const slot = $('.vase-slot');
+  if (slot) {
+    const t = today();
+    const [y, m] = ui.vaseYm && ui.tab === 'garden' ? ui.vaseYm.split('-').map(Number) : [t.getFullYear(), t.getMonth() + 1];
+    const model = vaseModel(y, m - 1);
+    window.Vase.mount(slot, model, { fire: fireLevel(derive().streak), dark: isDark(), label: `${model.title} vazosu, ${model.shapeName}. Döndürmek için sürükle.` });
+  }
+  document.querySelectorAll('img[data-thumb]').forEach((img) => { const src = thumbFor(img.dataset.thumb); if (src) img.src = src; });
+}
+// Vazosu olan aylar: ilk kayıttan bu aya
+function vaseMonths() {
+  const t = today();
+  if (!S.habits.length) return [ymOf(t)];
+  const first = S.habits.reduce((mn, h) => (h.createdAt < mn ? h.createdAt : mn), dkey(t));
+  const out = [];
+  let d = new Date(t.getFullYear(), t.getMonth(), 1);
+  const stop = parse(first.slice(0, 8) + '01');
+  for (let i = 0; i < 36 && d >= stop; i++) { out.push(ymOf(d)); d = new Date(d.getFullYear(), d.getMonth() - 1, 1); }
+  return out;
 }
 
 /* ================= küçük etkiler ================= */
@@ -445,7 +485,7 @@ function confetti() {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const W = (cv.width = innerWidth * dpr), H = (cv.height = innerHeight * dpr);
   const ctx = cv.getContext('2d');
-  const cols = ['#F3BE48', '#EE7B34', '#6BB36A', '#F29BB0', '#8CC7E0', '#C7A6EA'];
+  const cols = ['#DDB04A', '#F2CD75', '#0B7F7C', '#2343A6', '#D9512C', '#F4EFE2'];
   const ps = Array.from({ length: 90 }, () => ({
     x: W / 2 + (Math.random() - 0.5) * W * 0.5, y: H * 0.38,
     vx: (Math.random() - 0.5) * 14 * dpr, vy: (-Math.random() * 13 - 4) * dpr,
@@ -468,24 +508,45 @@ function confetti() {
   })(t0);
 }
 
-function levelUp(from, to) {
-  const sFrom = stageOf(from), sTo = stageOf(to);
-  const next = STAGES[sTo + 1];
-  const msg = sTo > sFrom
-    ? `Bitkin büyüdü ve artık bir ${STAGES[sTo].name}.`
-    : next ? `${next.name} olmasına ${next.lvl - to} seviye kaldı.` : 'Bahçen en görkemli hâlinde.';
+function overlay(html) {
   const el = document.createElement('div');
   el.className = 'levelup';
-  el.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-label="Seviye atladın">
-    <div class="eyebrow">Seviye atladın</div>
-    <h2>Seviye ${to}</h2>
-    <div class="stagebox">${plantSVG(sTo, true)}</div>
-    <p>${msg}</p>
-    <button class="btn block" data-act="close-levelup">Harika</button>
-  </div>`;
+  el.innerHTML = `<div class="box" role="dialog" aria-modal="true">${html}<button class="btn block" data-act="close-levelup">Harika</button></div>`;
   document.body.appendChild(el);
-  confetti(); buzz([30, 50, 30, 50, 60]);
   const b = $('button', el); if (b) b.focus();
+}
+function levelUp(from, to) {
+  const rFrom = rankOf(from), rTo = rankOf(to), next = RANKS[rTo + 1];
+  const fresh = GLAZES.filter((g) => g.lvl > from && g.lvl <= to).pop();
+  let html;
+  if (rTo > rFrom) {
+    html = `<div class="eyebrow">Yeni unvan</div><h2>${RANKS[rTo].name}</h2>
+      ${fresh ? `<div class="glaze on"><i style="--g:${css(fresh.rgb)}"></i>${fresh.name} sırı açıldı</div>` : ''}
+      <p>Seviye ${to}. Elin kile alıştı, çark artık seni tanıyor.</p>`;
+  } else {
+    html = `<div class="eyebrow">Seviye atladın</div><div class="big-num num">${to}</div>
+      <p>${next ? `${next.name} olmana ${next.lvl - to} seviye kaldı.` : 'Bu atölyenin pîri sensin.'}</p>`;
+  }
+  overlay(html);
+  confetti(); buzz([30, 50, 30, 50, 60]);
+}
+// Ay döndüğünde: geçen ayın vazosu fırından çıkar
+function monthReveal() {
+  const now = ymOf(today()), prev = S.seenMonth;
+  if (prev === now) return;
+  S.seenMonth = now; save();
+  if (!prev || prev > now || !window.Vase) return;
+  const [y, m] = prev.split('-').map(Number);
+  const model = vaseModel(y, m - 1);
+  if (!model.has) return;
+  const bits = [];
+  if (model.rate != null) bits.push(`${pct(model.rate)} dolu`);
+  if (model.perfect) bits.push(`${model.perfect} kusursuz gün`);
+  if (model.gold) bits.push(`${model.gold} altın damar`);
+  overlay(`<div class="eyebrow">Fırından çıktı</div><h2 style="font-size:32px">${MONTHS[m - 1]} vazosu</h2>
+    <div class="reveal"><img src="${thumbFor(prev)}" alt="${model.title} vazosu"></div>
+    <p>${model.shapeName}. ${bits.join(', ')}. Rafındaki yerini aldı, çarkta yeni bir ay başlıyor.</p>`);
+  confetti();
 }
 
 function applyTheme() {
@@ -542,17 +603,26 @@ const quickForm = (id) => `<form class="quick" data-form="quick-todo" autocomple
   <button class="btn" type="submit" aria-label="Görevi ekle"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
 </form>`;
 
-function gardenCard(D) {
-  const stage = stageOf(D.lvl.level);
-  const todayXp = D.xp[dkey(today())] || 0;
-  return `<button class="garden-card" data-act="tab" data-tab="garden" aria-label="Bahçem: seviye ${D.lvl.level}">
-    <span class="plant-win">${plantSVG(stage, D.litToday)}</span>
-    <span class="grow">
-      <span class="lvl-title" style="display:block"><b>Seviye ${D.lvl.level}</b> · ${STAGES[stage].name}</span>
-      <span class="xpbar" style="display:block"><i style="width:${Math.round(D.lvl.pct * 100)}%"></i></span>
-      <span class="xp-meta"><span class="num">${D.lvl.into} / ${D.lvl.span} XP</span><span class="num">Bugün +${todayXp}</span></span>
-    </span>
-  </button>`;
+function kilnChip(D) {
+  const temp = kilnTemp(D.streak);
+  return `<div class="kiln" role="img" aria-label="Seri ${D.streak} gün${temp ? `, fırın ${temp} derece` : ', fırın soğuk'}">${flame(22, D.streak > 0, D.litToday)}<b>${D.streak}</b><span><small>gün seri</small><small class="num">${temp ? `fırın ${temp}°` : 'fırın soğuk'}</small></span></div>`;
+}
+function rankFoot(D, tag) {
+  const r = RANKS[rankOf(D.lvl.level)];
+  const inner = `<span class="lvl-row"><span class="lvl-title">${r.name} <i>· Seviye ${D.lvl.level}</i></span><span class="xp-meta num">${D.lvl.into} / ${D.lvl.span} XP</span></span>
+    <span class="xpbar"><i style="width:${Math.round(D.lvl.pct * 100)}%"></i></span>`;
+  return tag === 'button'
+    ? `<button class="stage-foot" data-act="tab" data-tab="garden" aria-label="Atölye: ${r.name}, seviye ${D.lvl.level}">${inner}</button>`
+    : `<div class="stage-foot">${inner}</div>`;
+}
+function stageHero(D) {
+  const M = curModel();
+  return `<section class="stage">
+    <div class="vase-slot"></div>
+    <div class="plate"><span class="eyebrow">${MONTHS[today().getMonth()]} vazosu</span><b>${M.shapeName}</b><span class="num">${M.upto}. halka / ${M.n}</span></div>
+    ${kilnChip(D)}
+    ${rankFoot(D, 'button')}
+  </section>`;
 }
 
 function renderToday() {
@@ -574,12 +644,12 @@ function renderToday() {
 
   let habitsHtml;
   if (!S.habits.length) {
-    habitsHtml = `<div class="empty dashed"><h3>Bahçen ilk tohumunu bekliyor</h3><p>Bir alışkanlık ya da hobi ekle, her gün işaretledikçe serin büyüsün.</p><button class="btn sm" data-act="new-habit">Alışkanlık ekle</button></div>`;
+    habitsHtml = `<div class="empty dashed"><h3>Çark boş dönüyor</h3><p>Bir alışkanlık ya da hobi ekle. İşaretlediğin her gün vazona bir halka olur.</p><button class="btn sm" data-act="new-habit">Alışkanlık ekle</button></div>`;
   } else if (!list.length) {
     habitsHtml = `<div class="empty dashed"><p>${isT ? 'Bugün için planlı alışkanlık yok. Keyfine bak.' : 'Bu gün için planlı alışkanlık yoktu.'}</p></div>`;
   } else {
     habitsHtml = list.map((h) => habitCard(h, d)).join('');
-    if (doneN === list.length) habitsHtml += `<p class="small muted" style="text-align:center;padding-top:2px">${isT ? 'Bugün hepsi tamam. Bahçen ışıl ışıl.' : 'Bu günün hepsi tamam.'}</p>`;
+    if (doneN === list.length) habitsHtml += `<p class="small muted" style="text-align:center;padding-top:2px">${isT ? 'Bugünün halkası tam genişliğinde.' : 'Bu günün halkası tam.'}</p>`;
   }
 
   let todos;
@@ -596,10 +666,9 @@ function renderToday() {
 
   return `
   <header class="hello">
-    <div class="grow"><h1>${greet}, ${esc(S.name)}</h1><p class="date">${fmtLong(t)}</p></div>
-    <div class="streak-badge" role="img" aria-label="Genel seri: ${D.streak} gün">${flame(22, D.streak > 0, D.litToday)}<span class="num">${D.streak}</span><small>gün</small></div>
+    <div class="grow"><p class="eyebrow date">${fmtLong(t)}</p><h1>${greet}, <em>${esc(S.name)}</em></h1></div>
   </header>
-  ${gardenCard(D)}
+  ${stageHero(D)}
   <div class="week" role="group" aria-label="Bu hafta">${strip}</div>
   <section class="section">
     <div class="sec-head"><h2>${isT ? 'Alışkanlıklar' : fmtLong(d)}</h2>
@@ -637,7 +706,7 @@ function renderHabits() {
   const group = (title, arr) => arr.length ? `<section class="section"><div class="sec-head"><h2>${title}</h2><span class="count num">${arr.length}</span></div>${arr.map(card).join('')}</section>` : '';
   const body = S.habits.length
     ? group('Alışkanlıklar', habits) + group('Hobiler', hobbies) + '<p class="hint" style="text-align:center">Kutucuklar son 7 günü gösterir. Düzenlemek için karta dokun.</p>'
-    : `<div class="empty dashed"><h3>Henüz bir şey ekilmedi</h3><p>Su içmek, kitap okumak, resim yapmak… Takip etmek istediğin ilk şeyi ekle.</p><button class="btn sm" data-act="new-habit">Alışkanlık ekle</button></div>`;
+    : `<div class="empty dashed"><h3>Henüz kil yok</h3><p>Su içmek, kitap okumak, resim yapmak… Takip etmek istediğin ilk şeyi ekle.</p><button class="btn sm" data-act="new-habit">Alışkanlık ekle</button></div>`;
   return `<header class="page-head"><div><h1>Alışkanlıklar</h1><p class="sub">${S.habits.length ? `${habits.length} alışkanlık, ${hobbies.length} hobi` : 'Alışkanlıkların ve hobilerin burada durur'}</p></div><button class="btn sm" data-act="new-habit">${PLUS}Ekle</button></header>${body}`;
 }
 
@@ -746,7 +815,14 @@ function renderStats() {
       else c = x.rate >= 1 ? 'h4' : x.rate >= 0.7 ? 'h3' : x.rate >= 0.4 ? 'h2' : x.rate > 0 ? 'h1' : 'h0';
       return `<button class="hc ${c} ${x.k === ui.pick ? 'sel' : ''} ${x.k === tk ? 'is-today' : ''}" data-act="pick" data-k="${x.k}" ${x.future ? 'disabled' : ''} aria-label="${fmtShort(x.d)}: ${x.future ? 'henüz gelmedi' : x.rate == null ? 'plan yok' : pct(x.rate)}">${x.d.getDate()}</button>`;
     }).join('');
-    main = `<section class="card panel"><h3>Ay takvimi</h3><div class="heat">${cells}</div>
+    const VM = vaseModel(start.getFullYear(), start.getMonth());
+    const vbits = [];
+    if (VM.perfect) vbits.push(`${VM.perfect} kusursuz gün`);
+    if (VM.gold) vbits.push(`${VM.gold} altın damar`);
+    if (VM.open) vbits.push(`${VM.open} açık çatlak`);
+    main = `<section class="card month-vase"><div class="thumb"><img data-thumb="${VM.ym}" alt="${VM.title} vazosu"></div>
+      <div class="grow"><span class="eyebrow">${VM.cur ? 'Çarktaki vazo' : 'Raftaki vazo'}</span><h3>${MONTHS[start.getMonth()]} · ${VM.shapeName}</h3><p class="small muted">${vbits.length ? vbits.join(', ') : 'Her gün bir halka. Silüet bu ayın grafiği.'}</p></div></section>
+    <section class="card panel"><h3>Ay takvimi</h3><div class="heat">${cells}</div>
       <div class="heat-legend"><span>Az</span><i style="background:var(--heat-0)"></i><i style="background:var(--heat-1)"></i><i style="background:var(--heat-2)"></i><i style="background:var(--heat-3)"></i><i style="background:var(--heat-4)"></i><span>Çok</span></div>
       <p class="chart-note">${note}</p></section>`;
 
@@ -786,27 +862,55 @@ function renderStats() {
 }
 
 function renderGarden() {
-  const D = derive(), lv = D.lvl, stage = stageOf(lv.level), c = D.ctx;
-  const next = STAGES[stage + 1];
-  const steps = STAGES.map((s, i) => `<div class="step ${i === stage ? 'cur' : ''} ${i > stage ? 'locked' : ''}">${plantSVG(i, false)}<div class="nm">${i > stage ? '?' : s.name}</div><div class="lv">Seviye ${s.lvl}</div></div>`).join('');
+  const D = derive(), lv = D.lvl, c = D.ctx, t = today(), nowYm = ymOf(t);
+  const months = vaseMonths();
+  const ym = ui.vaseYm && months.includes(ui.vaseYm) ? ui.vaseYm : nowYm;
+  const [vy, vm] = ym.split('-').map(Number);
+  const M = vaseModel(vy, vm - 1);
+  const rIdx = rankOf(lv.level);
+  const bits = [];
+  if (M.rate != null) bits.push(`<span class="chip num">${pct(M.rate)} dolu</span>`);
+  if (M.perfect) bits.push(`<span class="chip num">${M.perfect} kusursuz gün</span>`);
+  if (M.gold) bits.push(`<span class="chip gold num">${M.gold} altın damar</span>`);
+  if (M.open) bits.push(`<span class="chip late num">${M.open} açık çatlak</span>`);
+  const glazes = GLAZES.map((g) => {
+    const locked = lv.level < g.lvl;
+    return `<button class="glaze ${M.glaze.id === g.id ? 'on' : ''} ${locked ? 'locked' : ''}" data-act="glaze" data-v="${g.id}" ${locked ? 'disabled' : ''} aria-pressed="${M.glaze.id === g.id}" aria-label="${g.name}${locked ? `, seviye ${g.lvl} olunca açılır` : ''}"><i style="--g:${css(g.rgb)}"></i>${g.name}${locked ? `<small>Seviye ${g.lvl}</small>` : ''}</button>`;
+  }).join('');
+  const shelf = months.map((x) => {
+    const [y, m] = x.split('-').map(Number);
+    return `<button class="shelf-item ${x === ym ? 'on' : ''}" data-act="shelf" data-v="${x}" aria-pressed="${x === ym}"><div class="thumb"><img data-thumb="${x}" alt=""></div><div class="nm">${MONTHS[m - 1]}</div><div class="ds">${x === nowYm ? 'çarkta' : y}</div></button>`;
+  }).join('');
+  const ranks = RANKS.map((r, i) => `<div class="rank ${i === rIdx ? 'cur' : ''} ${i > rIdx ? 'locked' : ''}"><b>${r.name}</b><span>Seviye ${r.lvl}</span></div>`).join('');
   const earned = BADGES.filter((b) => S.badges[b.id]).length;
   const badges = BADGES.map((b) => `<div class="badge ${S.badges[b.id] ? '' : 'locked'}"><div class="medal">${b.icon}</div><div class="nm">${b.name}</div><div class="ds">${b.desc}</div></div>`).join('');
   const themeBtn = (v, tx) => `<button class="${S.theme === v ? 'on' : ''}" data-act="theme" data-v="${v}" aria-pressed="${S.theme === v}">${tx}</button>`;
-  return `<header class="page-head"><div><h1>Bahçem</h1><p class="sub">Tamamladığın her şey bitkini büyütür</p></div></header>
-  <section class="card garden-hero">
-    <div class="stagebox">${plantSVG(stage, D.litToday)}</div>
-    <h1>Seviye ${lv.level} · ${STAGES[stage].name}</h1>
-    <div class="xpbar"><i style="width:${Math.round(lv.pct * 100)}%"></i></div>
-    <div class="xp-meta"><span class="num">${lv.into} / ${lv.span} XP</span><span class="num">Sonraki seviyeye ${lv.left} XP</span></div>
-    ${next ? `<p class="hint" style="margin-top:8px">Seviye ${next.lvl} olunca bitkin ${next.name} olacak.</p>` : ''}
+  return `<header class="page-head"><div><h1>Atölye</h1><p class="sub">Her gün bir halka, her ay bir vazo</p></div></header>
+  <section class="stage big">
+    <div class="vase-slot"></div>
+    <div class="plate"><span class="eyebrow">${M.cur ? 'Çarkta' : 'Rafta'}</span><b>${M.title}</b><span class="num">${M.shapeName} · ${M.upto} / ${M.n} halka</span></div>
+    ${kilnChip(D)}
+    ${rankFoot(D, 'div')}
   </section>
+  <div class="row" style="flex-wrap:wrap;gap:6px;justify-content:center">${bits.join('') || '<span class="hint">Vazoyu parmağınla döndürebilirsin.</span>'}${M.cur ? '' : '<button class="link-btn" data-act="shelf" data-v="">Bu aya dön</button>'}</div>
+  <section class="section"><div class="sec-head"><h2>Raf</h2><span class="count num">${months.length} vazo</span></div><div class="shelf">${shelf}</div></section>
+  <section class="section"><div class="sec-head"><h2>Vazo nasıl okunur?</h2></div>
+    <div class="card pad legend">
+      <div><i class="lg-wide"></i><span><b>Geniş halka.</b> O gün alışkanlıkların çoğu tamam.</span></div>
+      <div><i class="lg-thin"></i><span><b>Dar halka.</b> Eksik kalan bir gün. Vazo orada incelir.</span></div>
+      <div><i class="lg-gold"></i><span><b>Altın damar.</b> Kaçan bir gün çatlak bırakır. Geri döndüğünde altınla onarılır.</span></div>
+      <div><i class="lg-pearl"></i><span><b>İnci çizgisi.</b> Kusursuz gün, hepsi tamam.</span></div>
+      <div><i class="lg-clay"></i><span><b>Islak kil.</b> Bugünün halkası. İşaretledikçe yükselir.</span></div>
+    </div>
+  </section>
+  <section class="section"><div class="sec-head"><h2>Sır</h2><span class="count">${M.cur ? 'bu ayın rengi' : MONTHS[vm - 1]}</span></div>
+    <div class="card pad"><div class="glazes">${glazes}</div><p class="hint" style="margin-top:10px">Halkaların tonu, o gün yaptığın alışkanlıkların renginden gelir.</p></div>
+  </section>
+  <section class="section"><div class="sec-head"><h2>Unvanlar</h2></div><div class="ranks">${ranks}</div></section>
   <div class="tiles">
-    <div class="tile"><div class="lab">Toplam XP</div><div class="val">${D.total}</div></div>
-    <div class="tile"><div class="lab">Genel seri</div><div class="val">${flame(22, D.streak > 0, false)} ${D.streak}<small> gün</small></div></div>
-    <div class="tile"><div class="lab">En uzun seri</div><div class="val">${c.bestStreak}<small> gün</small></div></div>
-    <div class="tile"><div class="lab">Tamamlanan</div><div class="val">${c.totalDone + c.todosDone}</div></div>
+    <div class="tile"><div class="lab">Toplam XP</div><div class="val">${D.total}</div><div class="delta num">Sonraki seviyeye ${lv.left}</div></div>
+    <div class="tile"><div class="lab">Seri</div><div class="val">${flame(22, D.streak > 0, false)} ${D.streak}<small> gün</small></div><div class="delta num">En uzun ${c.bestStreak} gün</div></div>
   </div>
-  <section class="section"><div class="sec-head"><h2>Büyüme yolu</h2></div><div class="path">${steps}</div></section>
   <section class="section"><div class="sec-head"><h2>Rozetler</h2><span class="count num">${earned}/${BADGES.length}</span></div><div class="badges">${badges}</div></section>
   <section class="section"><div class="sec-head"><h2>XP nasıl kazanılır?</h2></div>
     <div class="card pad stack small">
@@ -817,9 +921,9 @@ function renderGarden() {
     </div>
   </section>
   <section class="section"><div class="sec-head"><h2>Ayarlar</h2></div>
-    <div class="card pad stack" style="gap:16px">
+    <div class="card pad stack" style="gap:18px">
       <div class="setting"><label for="setName">Adın</label><input class="field" id="setName" value="${esc(S.name)}" maxlength="24" autocomplete="off"></div>
-      <div class="setting"><span class="lab2">Görünüm</span><div class="seg">${themeBtn('auto', 'Otomatik')}${themeBtn('light', 'Gündüz')}${themeBtn('dark', 'Gece')}</div></div>
+      <div class="setting"><span class="lab2">Görünüm</span><div class="seg">${themeBtn('auto', 'Otomatik')}${themeBtn('light', 'Çini beyazı')}${themeBtn('dark', 'Gece atölyesi')}</div></div>
       <div class="setting"><span class="lab2">Yedek</span>
         <div class="row"><button class="btn ghost sm grow" data-act="export">Yedeği indir</button><button class="btn ghost sm grow" data-act="import">Yedekten yükle</button></div>
         <input type="file" id="importFile" accept="application/json,.json" hidden>
@@ -836,6 +940,7 @@ function render(enter) {
   const v = $('#view');
   v.innerHTML = VIEWS[ui.tab]();
   ui.flash = null;
+  mountVase();
   if (enter) { v.classList.remove('enter'); void v.offsetWidth; v.classList.add('enter'); }
   document.querySelectorAll('#tabbar button').forEach((b) => {
     const on = b.dataset.tab === ui.tab;
@@ -977,13 +1082,12 @@ function openOnboarding() {
 function drawOnboarding() {
   setSheet(`${sheetHead(`Hoş geldin, ${esc(S.name)}`)}
   <div class="sheet-body">
-    <div class="row" style="align-items:center;gap:14px"><span class="plant-win">${plantSVG(1, true)}</span>
-      <p class="grow muted">Burası senin bahçen. Alışkanlıklarını ve görevlerini tamamladıkça XP kazanır, seviye atlarsın. Bitkin de seninle birlikte büyür.</p></div>
+    <p class="manifesto">Burası senin atölyen. Her gün çarkta <em>bir halka</em> çevirirsin. Günün ne kadar doluysa halka o kadar geniş olur. Ay bittiğinde ortaya bir vazo çıkar ve hiçbiri diğerine benzemez. Bir gün kaçarsa çatlak kalır, ama döndüğünde <em>altınla onarılır</em>.</p>
     <div class="setting"><span class="lab2">Başlamak için birkaçını seç</span>
       <div class="starters">${STARTERS.map((s, i) => `<button class="starter ${draft.sel.includes(i) ? 'on' : ''}" data-act="ob-pick" data-v="${i}" aria-pressed="${draft.sel.includes(i)}"><span>${s.emoji}</span>${s.name}</button>`).join('')}</div>
       <p class="hint">Hepsini sonradan değiştirebilir, kendi alışkanlıklarını ekleyebilirsin.</p></div>
   </div>
-  <div class="sheet-foot"><button class="btn ghost" data-act="close-sheet">Kendim eklerim</button><button class="btn" data-act="ob-go">Bahçemi kur</button></div>`);
+  <div class="sheet-foot"><button class="btn ghost" data-act="close-sheet">Kendim eklerim</button><button class="btn" data-act="ob-go">Çarkı döndür</button></div>`);
 }
 
 /* ================= işlemler ================= */
@@ -991,15 +1095,18 @@ function bumpHabit(id, delta, ev) {
   const h = findH(id); if (!h) return;
   const k = dkey(ui.day), before = cnt(h, k), wasDone = before >= h.target;
   const wasPerfect = derive().perfect.has(k);
+  const openBefore = window.Vase ? curModel().open : 0;
   const c = h.target === 1 ? (before ? 0 : 1) : clamp(before + delta, 0, 999);
   if (c) h.log[k] = c; else delete h.log[k];
   const nowDone = c >= h.target;
   if (nowDone && !wasDone) ui.flash = id;
   after();
+  if (window.Vase && c !== before) window.Vase.kick();
   if (nowDone && !wasDone) {
     xpFloat(ev, `+${XP_HABIT} XP`); buzz(14);
+    if (window.Vase && openBefore > 0 && curModel().open < openBefore) toast('⚜️', 'Çatlak altınla onarıldı', 'Kaçan gün artık vazonun en güzel yeri');
     if (!wasPerfect && derive().perfect.has(k)) {
-      setTimeout(() => { toast('🌟', 'Kusursuz gün', `Hepsini tamamladın, +${XP_PERFECT} XP`); confetti(); buzz([20, 40, 20]); }, 380);
+      setTimeout(() => { toast('🌟', 'Kusursuz gün', `Halkana inci çizgisi çekildi, +${XP_PERFECT} XP`); confetti(); buzz([20, 40, 20]); }, 380);
     }
   } else if (c > before) buzz(8);
 }
@@ -1015,7 +1122,7 @@ function toggleTodo(id, ev) {
 
 function switchTab(tab) {
   if (!VIEWS[tab]) return;
-  ui.tab = tab; ui.pick = null;
+  ui.tab = tab; ui.pick = null; ui.vaseYm = null;
   if (tab === 'today') ui.day = today();
   render(true);
   window.scrollTo(0, 0);
@@ -1078,7 +1185,7 @@ const ACT = {
     const tk = dkey(today());
     picks.forEach((s) => S.habits.push({ id: uid(), name: s.name, emoji: s.emoji, color: s.color, kind: s.kind, freq: { type: s.freq.type, days: [0, 1, 2, 3, 4], times: s.freq.times || 3 }, target: s.target, unit: s.unit, createdAt: tk, log: {} }));
     closeSheet(); after();
-    if (picks.length) toast('🌱', 'Bahçen hazır', 'İlk alışkanlığını işaretle, ilk XP\'ni kazan');
+    if (picks.length) toast('🏺', 'Çark dönmeye hazır', 'İlk alışkanlığını işaretle, ilk halkanı çevir');
   },
 
   'stats-mode': (el) => { ui.statsMode = el.dataset.v; ui.statsOff = 0; ui.pick = null; render(); },
@@ -1086,11 +1193,13 @@ const ACT = {
   pick: (el) => { ui.pick = ui.pick === el.dataset.k ? null : el.dataset.k; render(); },
 
   theme: (el) => { S.theme = el.dataset.v; save(); applyTheme(); render(); },
+  glaze: (el) => { const g = GLAZES.find((x) => x.id === el.dataset.v); if (!g || derive().lvl.level < g.lvl) return; S.glazes[ui.vaseYm || ymOf(today())] = g.id; save(); render(); if (window.Vase) window.Vase.kick(); },
+  shelf: (el) => { ui.vaseYm = el.dataset.v || null; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); },
   export: () => {
     try {
       const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = `bahce-yedek-${dkey(today())}.json`;
+      a.href = URL.createObjectURL(blob); a.download = `atolye-yedek-${dkey(today())}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
       toast('💾', 'Yedek indirildi');
@@ -1146,7 +1255,7 @@ document.addEventListener('change', (e) => {
     rd.onload = () => {
       let obj = null;
       try { obj = JSON.parse(rd.result); } catch (err) { obj = null; }
-      if (!obj || !Array.isArray(obj.habits) || !Array.isArray(obj.todos)) { toast('⚠️', 'Bu dosya okunamadı', 'Bahçe yedeği olan .json dosyasını seç'); return; }
+      if (!obj || !Array.isArray(obj.habits) || !Array.isArray(obj.todos)) { toast('⚠️', 'Bu dosya okunamadı', 'Atölye yedeği olan .json dosyasını seç'); return; }
       confirmSheet({
         title: 'Yedek yüklensin mi?', text: `Yedekte ${obj.habits.length} alışkanlık ve ${obj.todos.length} görev var. Şu anki verilerin yerine bunlar gelecek.`, yes: 'Yükle',
         onYes: () => { S = normalize(obj); S.onboarded = true; memo = null; save(); applyTheme(); render(true); toast('🌿', 'Yedek yüklendi'); },
@@ -1161,13 +1270,13 @@ document.addEventListener('change', (e) => {
 let lastDay = dkey(today());
 function refreshIfNewDay() {
   const k = dkey(today());
-  if (k !== lastDay) { lastDay = k; ui.day = today(); memo = null; render(); }
+  if (k !== lastDay) { lastDay = k; ui.day = today(); memo = null; render(); monthReveal(); }
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshIfNewDay(); });
 setInterval(refreshIfNewDay, 60000);
 if (window.matchMedia) {
   const mq = matchMedia('(prefers-color-scheme: dark)');
-  const onScheme = () => applyTheme();
+  const onScheme = () => { applyTheme(); render(); };
   if (mq.addEventListener) mq.addEventListener('change', onScheme); else if (mq.addListener) mq.addListener(onScheme);
 }
 
@@ -1177,6 +1286,8 @@ applyTheme();
 S.celebratedLevel = Math.max(S.celebratedLevel, 1);
 render();
 if (!S.onboarded && !S.habits.length && !S.todos.length) openOnboarding();
+else monthReveal();
+if (!S.seenMonth) { S.seenMonth = ymOf(today()); save(); }
 
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && location.hostname !== 'localhost') {
   window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => { /* çevrimdışı destek isteğe bağlı */ }); });
