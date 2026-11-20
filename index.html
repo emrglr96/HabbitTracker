@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ceyda'nın Planı</title>
-<meta name="description" content="Alışkanlıklar, görevler ve iki haftalık rutin için sade bir takip uygulaması.">
+<meta name="description" content="Alışkanlıklar, görevler, 14 günlük ev işleri planı ve takvim.">
 <meta name="theme-color" content="#F8F6FC" id="themeColor">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -24,16 +24,14 @@
 </div>
 
 <nav id="tabbar" class="tabbar" aria-label="Sayfalar">
-  <button data-act="tab" data-tab="today"><span class="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.900 4.900l1.400 1.400M17.700 17.700l1.400 1.400M4.900 19.100l1.400-1.400M17.700 6.300l1.400-1.400"/></svg></span><span class="tab-tx">Bugün</span></button>
-  <button data-act="tab" data-tab="habits"><span class="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.500 2-5 1 1 2 1.500 2.500 1.500C11.500 8 11.500 5.500 12 3z"/></svg></span><span class="tab-tx">Alışkanlık</span></button>
-  <button data-act="tab" data-tab="todos"><span class="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10M3.500 6l1 1 2-2M3.500 12l1 1 2-2M3.500 18l1 1 2-2"/></svg></span><span class="tab-tx">Görevler</span></button>
+  <button data-act="tab" data-tab="today"><span class="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10M3.500 6l1 1 2-2M3.500 12l1 1 2-2M3.500 18l1 1 2-2"/></svg></span><span class="tab-tx">Bugün</span></button>
+  <button data-act="tab" data-tab="cal"><span class="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.500" y="5" width="17" height="15" rx="3"/><path d="M3.500 10h17M8 3v4M16 3v4"/></svg></span><span class="tab-tx">Takvim</span></button>
   <button data-act="tab" data-tab="stats"><span class="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg></span><span class="tab-tx">Analiz</span></button>
-  <button data-act="tab" data-tab="garden"><span class="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.500 20c1-4 4-6 7.500-6s6.500 2 7.500 6"/></svg></span><span class="tab-tx">Profil</span></button>
+  <button data-act="tab" data-tab="settings"><span class="tab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></span><span class="tab-tx">Ayarlar</span></button>
 </nav>
 
 <div id="sheetHost" hidden></div>
 <div id="toasts" aria-live="polite"></div>
-<canvas id="confetti" aria-hidden="true"></canvas>
 
 <noscript><p style="padding:24px;font-family:sans-serif">Bu uygulamanın çalışması için JavaScript gerekli.</p></noscript>
 <script src="app.js"></script>

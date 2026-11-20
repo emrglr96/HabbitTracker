@@ -1,14 +1,12 @@
 # Ceyda'nın Planı
 
-Alışkanlık, hobi, görev ve iki haftalık rutin takibi için telefona uygun, sade bir web uygulaması.
+Alışkanlıklar, görevler, 14 günlük ev işleri döngüsü ve takvim için telefona uygun, sade bir web uygulaması.
 
-- **Bugün:** günün alışkanlıkları, sayaçlar, bugünün ve yarının görevleri
-- **Alışkanlık:** her gün, belirli günler ya da haftada N kez; alışkanlık ve hobi ayrımı, seri takibi
-- **Görevler:** tarihli ya da tarihsiz yapılacaklar. Satırı sola kaydırınca bir gün ertelenir, sağa kaydırınca bugüne alınır
+- **Bugün:** tek ekranda günün görevleri, alışkanlıkları, yarın ve sonraki günler. Görev satırı sola kaydırılınca bir gün ertelenir, sağa kaydırılınca bugüne alınır. "Düzenle" ile bütün alışkanlıklar ve 14 günlük plan yönetilir
 - **14 günlük plan:** Gün 1'den Gün 14'e ev işleri döngüsü, sürekli tekrar eder. Her günün işleri o günün görevi olarak listeye düşer. Aylık işler iki döngüde bir gelir
-- **Gün sayacı:** bir başlangıç gününden bugüne kaçıncı gün olduğunu gösterir
+- **Takvim:** ay görünümü. Özel günler (istenirse her yıl tekrar eden) ve ek planlar eklenir; seçilen günün görevleri ve alışkanlıkları görünür
 - **Analiz:** haftalık ve aylık tamamlama, takvim ısı haritası, alışkanlık karnesi
-- **Profil:** seviye ve XP, rozetler, tema, yedekleme
+- **Ayarlar:** ad, tema, gün sayacı, yedekleme
 
 Ceyda'nın planı (ev işleri döngüsü, günlük alışkanlıklar, kişisel rutin) `app.js` içindeki `PRESET` listesinde durur. Sürüm numarası artınca yeni eklenenler telefona bir kez yüklenir. Döngünün 1. günü `PRESET.start` ile belirlenir ve uygulamadan değiştirilebilir.
 

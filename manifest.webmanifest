@@ -1,7 +1,7 @@
 {
   "name": "Ceyda'nın Planı",
   "short_name": "Planım",
-  "description": "Alışkanlıklar, görevler ve iki haftalık rutin için sade bir takip uygulaması.",
+  "description": "Alışkanlıklar, görevler, 14 günlük ev işleri planı ve takvim.",
   "lang": "tr",
   "start_url": "./",
   "scope": "./",
