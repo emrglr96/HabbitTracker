@@ -1,4 +1,4 @@
-/* Ceyda'nın Atölyesi: alışkanlık ve görev takibi. Veriler yalnızca bu cihazda saklanır. */
+/* Ceyda'nın Planı: alışkanlık, görev ve iki haftalık rutin takibi. Veriler yalnızca bu cihazda saklanır. */
 (() => {
 'use strict';
 
@@ -48,32 +48,16 @@ const STARTERS = [
   { emoji: '🪴', name: 'Çiçekleri sula', color: 0, kind: 'hobby', freq: { type: 'weekly', times: 2 }, target: 1, unit: '' },
 ];
 
-// Zanaat unvanları: hangi seviyede hangi unvan
-const RANKS = [
-  { lvl: 1, name: 'Çırak' },
-  { lvl: 3, name: 'Kalfa' },
-  { lvl: 6, name: 'Usta' },
-  { lvl: 10, name: 'Nakkaş' },
-  { lvl: 15, name: 'Başusta' },
-  { lvl: 22, name: 'Üstat' },
-  { lvl: 30, name: 'Pîr' },
-];
-// Sırlar: vazonun ana rengi. Unvan yükseldikçe yenileri açılır.
-const GLAZES = [
-  { id: 'sedef', name: 'Sedef', lvl: 1, rgb: [0.93, 0.91, 0.85] },
-  { id: 'seladon', name: 'Seladon', lvl: 3, rgb: [0.6, 0.76, 0.66] },
-  { id: 'turkuaz', name: 'Turkuaz', lvl: 6, rgb: [0.1, 0.58, 0.6] },
-  { id: 'kobalt', name: 'Kobalt', lvl: 10, rgb: [0.15, 0.26, 0.62] },
-  { id: 'mercan', name: 'Mercan', lvl: 15, rgb: [0.8, 0.28, 0.2] },
-  { id: 'gece', name: 'Gece', lvl: 22, rgb: [0.11, 0.1, 0.14] },
-  { id: 'yaldiz', name: 'Yaldız', lvl: 30, rgb: [0.8, 0.62, 0.25] },
-];
-// Alışkanlık renklerinin vazoya karışan koyu tonları
-const DEEP = [[0.5, 0.69, 0.41], [0.36, 0.66, 0.79], [0.9, 0.73, 0.24], [0.93, 0.56, 0.33], [0.9, 0.48, 0.56], [0.62, 0.48, 0.85], [0.3, 0.71, 0.63], [0.73, 0.52, 0.34]];
-const css = (rgb) => `rgb(${rgb.map((v) => Math.round(v * 255)).join(',')})`;
+// Hazır rutinler: Ceyda'nın iki haftalık planı buraya yazılır.
+// week: 1 ya da 2 (0 = her hafta), days: 0 Pazartesi … 6 Pazar, size: s / m / l.
+// Sürüm numarası artınca listeye yeni eklenenler telefona bir kez yüklenir.
+const PRESET = {
+  version: 0,
+  routines: [],
+};
 
 const BADGES = [
-  { id: 'first', icon: '🏺', name: 'İlk Halka', desc: 'İlk alışkanlığını tamamla', test: (c) => c.totalDone >= 1 },
+  { id: 'first', icon: '🌱', name: 'İlk Adım', desc: 'İlk alışkanlığını tamamla', test: (c) => c.totalDone >= 1 },
   { id: 'todo1', icon: '✅', name: 'Bir Çizik', desc: 'İlk görevini bitir', test: (c) => c.todosDone >= 1 },
   { id: 'perfect1', icon: '🌟', name: 'Kusursuz Gün', desc: 'Bir günde hepsini tamamla', test: (c) => c.perfectDays >= 1 },
   { id: 's3', icon: '✨', name: 'Kıvılcım', desc: '3 günlük seri', test: (c) => c.bestStreak >= 3 },
@@ -86,13 +70,13 @@ const BADGES = [
   { id: 'd250', icon: '💯', name: 'Durdurulamaz', desc: '250 alışkanlık tamamla', test: (c) => c.totalDone >= 250 },
   { id: 'todo25', icon: '🏹', name: 'Görev Avcısı', desc: '25 görev bitir', test: (c) => c.todosDone >= 25 },
   { id: 'hobby10', icon: '🎨', name: 'Hobi Sever', desc: 'Hobilerine 10 kez vakit ayır', test: (c) => c.hobbyDone >= 10 },
-  { id: 'kintsugi', icon: '⚜️', name: 'Altın Damar', desc: 'Kaçan bir günden sonra geri dön', test: (c) => c.goldSeams >= 1 },
-  { id: 'l5', icon: '🤲', name: 'Eli Kile Yatkın', desc: '5. seviyeye ulaş', test: (c) => c.level >= 5 },
-  { id: 'l10', icon: '🖌️', name: 'Nakkaş Mührü', desc: '10. seviyeye ulaş', test: (c) => c.level >= 10 },
+  { id: 'kintsugi', icon: '💪', name: 'Geri Dönüş', desc: 'Kaçan bir günden sonra geri dön', test: (c) => c.goldSeams >= 1 },
+  { id: 'l5', icon: '⭐', name: 'Beşinci Seviye', desc: '5. seviyeye ulaş', test: (c) => c.level >= 5 },
+  { id: 'l10', icon: '🏆', name: 'Onuncu Seviye', desc: '10. seviyeye ulaş', test: (c) => c.level >= 10 },
 ];
 
 /* ================= durum ================= */
-const blank = () => ({ v: 1, name: 'Ceyda', habits: [], todos: [], xpBank: 0, celebratedLevel: 1, badges: {}, glazes: {}, seenMonth: '', theme: 'auto', onboarded: false });
+const blank = () => ({ v: 1, name: 'Ceyda', habits: [], todos: [], xpBank: 0, celebratedLevel: 1, badges: {}, routines: [], cycleStart: dkey(weekStart(today())), gen: {}, presetV: 0, theme: 'auto', onboarded: false });
 
 function normalize(raw) {
   const s = Object.assign(blank(), raw && typeof raw === 'object' ? raw : {});
@@ -111,10 +95,17 @@ function normalize(raw) {
   s.todos = (Array.isArray(s.todos) ? s.todos : []).filter((t) => t && t.id && t.title).map((t) => ({
     id: String(t.id), title: String(t.title), due: t.due || null, size: XP_TODO[t.size] ? t.size : 'm',
     done: !!t.done, doneAt: t.done ? (t.doneAt || dkey(today())) : null, createdAt: t.createdAt || dkey(today()),
+    rid: t.rid ? String(t.rid) : null, occ: t.occ || null,
   }));
+  s.routines = (Array.isArray(s.routines) ? s.routines : []).filter((r) => r && r.id && r.title).map((r) => ({
+    id: String(r.id), title: String(r.title), week: [0, 1, 2].includes(r.week) ? r.week : 0,
+    days: Array.isArray(r.days) ? r.days.filter((n) => n >= 0 && n <= 6) : [], size: XP_TODO[r.size] ? r.size : 'm',
+  }));
+  s.cycleStart = /^\d{4}-\d{2}-\d{2}$/.test(s.cycleStart) ? dkey(weekStart(parse(s.cycleStart))) : dkey(weekStart(today()));
+  s.gen = s.gen && typeof s.gen === 'object' ? s.gen : {};
+  s.presetV = s.presetV | 0;
   s.badges = s.badges && typeof s.badges === 'object' ? s.badges : {};
-  s.glazes = s.glazes && typeof s.glazes === 'object' ? s.glazes : {};
-  s.seenMonth = typeof s.seenMonth === 'string' ? s.seenMonth : '';
+  delete s.glazes; delete s.seenMonth;
   s.xpBank = Math.max(0, s.xpBank | 0);
   s.celebratedLevel = Math.max(1, s.celebratedLevel | 0);
   s.name = String(s.name || 'Ceyda').slice(0, 24);
@@ -133,7 +124,7 @@ function save() {
 }
 
 let S = load();
-const ui = { tab: 'today', day: today(), statsMode: 'week', statsOff: 0, pick: null, showDone: false, flash: null, vaseYm: null };
+const ui = { tab: 'today', day: today(), statsMode: 'week', statsOff: 0, pick: null, showDone: false, flash: null, todoView: 'list', planWeek: null, showLater: true };
 let memo = null;
 let draft = null;
 
@@ -215,14 +206,6 @@ function levelInfo(xp) {
   const base = needFor(level), next = needFor(level + 1);
   return { level, into: xp - base, span: next - base, pct: (xp - base) / (next - base), left: next - xp };
 }
-function rankOf(level) {
-  let i = 0;
-  RANKS.forEach((r, idx) => { if (level >= r.lvl) i = idx; });
-  return i;
-}
-const ymOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-const kilnTemp = (streak) => (streak > 0 ? Math.min(1280, 560 + streak * 36) : 0);
-
 function derive() {
   if (memo) return memo;
   const t = today(), tk = dkey(t);
@@ -369,79 +352,51 @@ function flame(size, lit, animate) {
   return `<svg class="flame ${lit ? (animate ? 'lit' : '') : 'off'}" viewBox="0 0 24 28" width="${size}" height="${Math.round(size * 28 / 24)}" aria-hidden="true"><path class="f-out" d="M12 1c1 5 7 8 7 16a7 7 0 0 1-14 0c0-4 2-6 3-9 1 2 2 3 3 3 0-4 0-7 1-10z"/><path class="f-in" d="M12 13c1 3 3.500 4 3.500 7a3.500 3.500 0 0 1-7 0c0-2 1.500-3 3.500-7z"/></svg>`;
 }
 
-/* ================= vazo ================= */
-// Bir ayın günlerinden vazo modeli: her gün bir halka.
-function vaseModel(y, m) {
-  const t = today(), D = derive();
-  const n = new Date(y, m + 1, 0).getDate();
-  const cur = y === t.getFullYear() && m === t.getMonth();
-  const upto = new Date(y, m, 1) > t ? 0 : cur ? t.getDate() : n;
-  const ym = `${y}-${pad(m + 1)}`;
-  const glaze = GLAZES.find((g) => g.id === S.glazes[ym]) || GLAZES[0];
-  const rings = [];
-  let lastActive = -1, sumRate = 0, rated = 0;
-  for (let i = 0; i < upto; i++) {
-    const d = new Date(y, m, i + 1), k = dkey(d);
-    let sched = 0, done = 0;
-    const mix = [0, 0, 0];
-    for (const h of S.habits) {
-      const dn = isDone(h, k);
-      if (isWeekly(h)) { if (dn) sched++; } else if (isSched(h, d)) sched++;
-      if (dn) { done++; const c = DEEP[h.color]; mix[0] += c[0]; mix[1] += c[1]; mix[2] += c[2]; }
-    }
-    const isT = cur && i === upto - 1;
-    const rate = sched ? Math.min(1, done / sched) : null;
-    const col = done ? glaze.rgb.map((g, q) => g * 0.74 + (mix[q] / done) * 0.26) : glaze.rgb.slice();
-    const missed = sched > 0 && done === 0 && !isT;
-    if (done) lastActive = i;
-    if (rate != null && !(isT && !done)) { sumRate += rate; rated++; }
-    rings.push({ f: rate == null ? null : missed ? 0.05 : rate, col, missed, perfect: D.perfect.has(k), wet: isT, gold: false, open: false });
-  }
-  let gold = 0, open = 0, perfect = 0;
-  rings.forEach((r, i) => {
-    if (r.missed) { if (i < lastActive) { r.gold = true; gold++; } else { r.open = true; open++; } }
-    if (r.perfect) perfect++;
-  });
-  const shape = (y * 12 + m) % window.Vase.shapes.length;
-  return { n, shape, rings, ym, glaze, gold, open, perfect, cur, upto, rate: rated ? sumRate / rated : null, has: lastActive >= 0, title: `${MONTHS[m]} ${y}`, shapeName: window.Vase.shapes[shape] };
+/* ================= 2 haftalık rutin ================= */
+// Rutin: iki haftalık döngüde belirli günlerde tekrar eden iş.
+// Her tekrar, o günün görevi olarak listeye düşer; ertelenebilir, öne alınabilir, tamamlanabilir.
+const GEN_AHEAD = 13;
+function cycleWeek(d) {
+  const n = Math.round((weekStart(d) - parse(S.cycleStart)) / 6048e5);
+  return (((n % 2) + 2) % 2) + 1;
 }
-const curModel = () => { const t = today(); return vaseModel(t.getFullYear(), t.getMonth()); };
-function isDark() {
-  const a = document.documentElement.getAttribute('data-theme');
-  return a ? a === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
-}
-const fireLevel = (streak) => (streak > 0 ? 0.22 + 0.78 * Math.min(1, streak / 21) : 0);
+const routineOn = (r, d) => r.days.includes(mdow(d)) && (r.week === 0 || r.week === cycleWeek(d));
+const weekName = (w) => (w === 0 ? 'Her hafta' : `${w}. hafta`);
 
-const thumbCache = {};
-function thumbFor(ym) {
-  const [y, m] = ym.split('-').map(Number);
-  const model = vaseModel(y, m - 1), dark = isDark();
-  const key = ym + (dark ? 'd' : 'l') + model.glaze.id + model.rings.map((r) => `${r.f == null ? 'n' : Math.round(r.f * 20)}${r.gold ? 'g' : r.open ? 'o' : ''}${r.perfect ? 'p' : ''}${r.wet ? 'w' : ''}${Math.round(r.col[0] * 30)}${Math.round(r.col[2] * 30)}`).join('.');
-  if (!thumbCache[key]) thumbCache[key] = window.Vase.thumb(model, 224, 292, { dark, fire: 0 });
-  return thumbCache[key];
-}
-// Çizimden sonra: vazoyu sahneye yerleştir, küçük resimleri doldur
-function mountVase() {
-  if (!window.Vase) return;
-  const slot = $('.vase-slot');
-  if (slot) {
-    const t = today();
-    const [y, m] = ui.vaseYm && ui.tab === 'garden' ? ui.vaseYm.split('-').map(Number) : [t.getFullYear(), t.getMonth() + 1];
-    const model = vaseModel(y, m - 1);
-    window.Vase.mount(slot, model, { fire: fireLevel(derive().streak), dark: isDark(), label: `${model.title} vazosu, ${model.shapeName}. Döndürmek için sürükle.` });
+// Bugünden başlayarak 14 günün rutin görevlerini üretir. Üretilen her tekrar bir kez üretilir.
+function syncRoutines() {
+  const t = today(), tk = dkey(t);
+  for (const key in S.gen) if (key.slice(-10) < tk) delete S.gen[key];
+  let n = 0;
+  for (let i = 0; i <= GEN_AHEAD; i++) {
+    const d = addDays(t, i), k = dkey(d);
+    for (const r of S.routines) {
+      if (!routineOn(r, d)) continue;
+      const key = `${r.id}|${k}`;
+      if (S.gen[key]) continue;
+      S.gen[key] = 1;
+      S.todos.push({ id: uid(), title: r.title, due: k, size: r.size, done: false, doneAt: null, createdAt: tk, rid: r.id, occ: k });
+      n++;
+    }
   }
-  document.querySelectorAll('img[data-thumb]').forEach((img) => { const src = thumbFor(img.dataset.thumb); if (src) img.src = src; });
+  if (n) memo = null;
+  return n;
 }
-// Vazosu olan aylar: ilk kayıttan bu aya
-function vaseMonths() {
-  const t = today();
-  if (!S.habits.length) return [ymOf(t)];
-  const first = S.habits.reduce((mn, h) => (h.createdAt < mn ? h.createdAt : mn), dkey(t));
-  const out = [];
-  let d = new Date(t.getFullYear(), t.getMonth(), 1);
-  const stop = parse(first.slice(0, 8) + '01');
-  for (let i = 0; i < 36 && d >= stop; i++) { out.push(ymOf(d)); d = new Date(d.getFullYear(), d.getMonth() - 1, 1); }
-  return out;
+// Rutin değişince: bugünden sonraki tamamlanmamış tekrarlarını sil, yeniden üret
+function rebuildRoutine(rid) {
+  const tk = dkey(today());
+  S.todos = S.todos.filter((x) => !(x.rid === rid && !x.done && x.occ >= tk));
+  for (const key in S.gen) if (key.startsWith(rid + '|')) delete S.gen[key];
+  S.todos.forEach((x) => { if (x.rid === rid && x.occ >= tk) S.gen[`${rid}|${x.occ}`] = 1; });
+  memo = null;
+}
+function applyPreset() {
+  if ((S.presetV | 0) >= PRESET.version) return;
+  const have = new Set(S.routines.map((r) => r.id));
+  PRESET.routines.forEach((r) => {
+    if (!have.has(r.id)) S.routines.push({ id: r.id, title: r.title, week: r.week | 0, days: (r.days || []).slice(), size: XP_TODO[r.size] ? r.size : 'm' });
+  });
+  S.presetV = PRESET.version;
 }
 
 /* ================= küçük etkiler ================= */
@@ -485,7 +440,7 @@ function confetti() {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const W = (cv.width = innerWidth * dpr), H = (cv.height = innerHeight * dpr);
   const ctx = cv.getContext('2d');
-  const cols = ['#DDB04A', '#F2CD75', '#0B7F7C', '#2343A6', '#D9512C', '#F4EFE2'];
+  const cols = ['#B9A7F2', '#BDE7D3', '#FBD2BB', '#F9CBDA', '#FBEBB5', '#C6E2F6'];
   const ps = Array.from({ length: 90 }, () => ({
     x: W / 2 + (Math.random() - 0.5) * W * 0.5, y: H * 0.38,
     vx: (Math.random() - 0.5) * 14 * dpr, vy: (-Math.random() * 13 - 4) * dpr,
@@ -516,37 +471,9 @@ function overlay(html) {
   const b = $('button', el); if (b) b.focus();
 }
 function levelUp(from, to) {
-  const rFrom = rankOf(from), rTo = rankOf(to), next = RANKS[rTo + 1];
-  const fresh = GLAZES.filter((g) => g.lvl > from && g.lvl <= to).pop();
-  let html;
-  if (rTo > rFrom) {
-    html = `<div class="eyebrow">Yeni unvan</div><h2>${RANKS[rTo].name}</h2>
-      ${fresh ? `<div class="glaze on"><i style="--g:${css(fresh.rgb)}"></i>${fresh.name} sırı açıldı</div>` : ''}
-      <p>Seviye ${to}. Elin kile alıştı, çark artık seni tanıyor.</p>`;
-  } else {
-    html = `<div class="eyebrow">Seviye atladın</div><div class="big-num num">${to}</div>
-      <p>${next ? `${next.name} olmana ${next.lvl - to} seviye kaldı.` : 'Bu atölyenin pîri sensin.'}</p>`;
-  }
-  overlay(html);
+  const left = derive().lvl.left;
+  overlay(`<div class="eyebrow">Seviye atladın</div><div class="big-num num">${to}</div><p>Sonraki seviyeye ${left} XP kaldı.</p>`);
   confetti(); buzz([30, 50, 30, 50, 60]);
-}
-// Ay döndüğünde: geçen ayın vazosu fırından çıkar
-function monthReveal() {
-  const now = ymOf(today()), prev = S.seenMonth;
-  if (prev === now) return;
-  S.seenMonth = now; save();
-  if (!prev || prev > now || !window.Vase) return;
-  const [y, m] = prev.split('-').map(Number);
-  const model = vaseModel(y, m - 1);
-  if (!model.has) return;
-  const bits = [];
-  if (model.rate != null) bits.push(`${pct(model.rate)} dolu`);
-  if (model.perfect) bits.push(`${model.perfect} kusursuz gün`);
-  if (model.gold) bits.push(`${model.gold} altın damar`);
-  overlay(`<div class="eyebrow">Fırından çıktı</div><h2 style="font-size:32px">${MONTHS[m - 1]} vazosu</h2>
-    <div class="reveal"><img src="${thumbFor(prev)}" alt="${model.title} vazosu"></div>
-    <p>${model.shapeName}. ${bits.join(', ')}. Rafındaki yerini aldı, çarkta yeni bir ay başlıyor.</p>`);
-  confetti();
 }
 
 function applyTheme() {
@@ -589,12 +516,18 @@ function todoRow(td, showDue) {
   const chips = [];
   if (!td.done && td.due && td.due < tk) chips.push(`<span class="chip late">Gecikti · ${dueLabel(td)}</span>`);
   else if (showDue && !td.done) chips.push(`<span class="chip">${dueLabel(td)}</span>`);
+  if (td.rid) chips.push('<span class="chip rt">Rutin</span>');
   chips.push(`<span class="chip gold num">${td.done ? '' : '+'}${XP_TODO[td.size]} XP</span>`);
-  return `<div class="todo ${td.done ? 'is-done' : ''} ${ui.flash === td.id ? 'just-done' : ''}">
-    <button class="tick" data-act="toggle-todo" data-id="${td.id}" aria-pressed="${td.done}" aria-label="${esc(td.title)}: ${td.done ? 'geri al' : 'tamamla'}"><i>${ICON.check}</i></button>
-    <button class="todo-body" data-act="edit-todo" data-id="${td.id}"><span class="todo-title">${esc(td.title)}</span><span class="todo-meta">${chips.join('')}</span></button>
+  const canL = !td.done, canR = !td.done && td.due !== tk;
+  return `<div class="swipe" data-id="${td.id}" data-l="${canL ? 1 : 0}" data-r="${canR ? 1 : 0}">
+    <div class="swipe-bg" aria-hidden="true"><span class="sb-r">☀️ Bugüne al</span><span class="sb-l">${td.due && td.due > tk ? 'Bir gün ertele' : 'Yarına ertele'} 🌙</span></div>
+    <div class="todo ${td.done ? 'is-done' : ''} ${ui.flash === td.id ? 'just-done' : ''}">
+      <button class="tick" data-act="toggle-todo" data-id="${td.id}" aria-pressed="${td.done}" aria-label="${esc(td.title)}: ${td.done ? 'geri al' : 'tamamla'}"><i>${ICON.check}</i></button>
+      <button class="todo-body" data-act="edit-todo" data-id="${td.id}"><span class="todo-title">${esc(td.title)}</span><span class="todo-meta">${chips.join('')}</span></button>
+    </div>
   </div>`;
 }
+const SWIPE_HINT = '<p class="hint swipe-hint">Sola kaydır: ertele. Sağa kaydır: bugüne al.</p>';
 
 const PLUS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="3.200" stroke-linecap="round"/></svg>';
 
@@ -603,26 +536,25 @@ const quickForm = (id) => `<form class="quick" data-form="quick-todo" autocomple
   <button class="btn" type="submit" aria-label="Görevi ekle"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
 </form>`;
 
-function kilnChip(D) {
-  const temp = kilnTemp(D.streak);
-  return `<div class="kiln" role="img" aria-label="Seri ${D.streak} gün${temp ? `, fırın ${temp} derece` : ', fırın soğuk'}">${flame(22, D.streak > 0, D.litToday)}<b>${D.streak}</b><span><small>gün seri</small><small class="num">${temp ? `fırın ${temp}°` : 'fırın soğuk'}</small></span></div>`;
+function summaryCard(D, done, total) {
+  const p = total ? Math.round((done / total) * 100) : 0;
+  const todayXp = D.xp[dkey(today())] || 0;
+  return `<button class="summary" data-act="tab" data-tab="garden" aria-label="Profil: seviye ${D.lvl.level}, ${done} / ${total} tamamlandı">
+    <span class="sum-ring ${total && done === total ? 'full' : ''}" style="--p:${p}"><span><b class="num">${done}</b><small class="num">/ ${total}</small></span></span>
+    <span class="grow">
+      <span class="sum-top"><span class="lvl-title">Seviye ${D.lvl.level}</span><span class="sum-streak">${flame(18, D.streak > 0, D.litToday)}<b class="num">${D.streak}</b> gün seri</span></span>
+      <span class="xpbar"><i style="width:${Math.round(D.lvl.pct * 100)}%"></i></span>
+      <span class="xp-meta"><span class="num">${D.lvl.into} / ${D.lvl.span} XP</span><span class="num">Bugün +${todayXp}</span></span>
+    </span>
+  </button>`;
 }
-function rankFoot(D, tag) {
-  const r = RANKS[rankOf(D.lvl.level)];
-  const inner = `<span class="lvl-row"><span class="lvl-title">${r.name} <i>· Seviye ${D.lvl.level}</i></span><span class="xp-meta num">${D.lvl.into} / ${D.lvl.span} XP</span></span>
-    <span class="xpbar"><i style="width:${Math.round(D.lvl.pct * 100)}%"></i></span>`;
-  return tag === 'button'
-    ? `<button class="stage-foot" data-act="tab" data-tab="garden" aria-label="Atölye: ${r.name}, seviye ${D.lvl.level}">${inner}</button>`
-    : `<div class="stage-foot">${inner}</div>`;
-}
-function stageHero(D) {
-  const M = curModel();
-  return `<section class="stage">
-    <div class="vase-slot"></div>
-    <div class="plate"><span class="eyebrow">${MONTHS[today().getMonth()]} vazosu</span><b>${M.shapeName}</b><span class="num">${M.upto}. halka / ${M.n}</span></div>
-    ${kilnChip(D)}
-    ${rankFoot(D, 'button')}
-  </section>`;
+function tomorrowSection() {
+  const tmk = dkey(addDays(today(), 1));
+  const list = S.todos.filter((x) => !x.done && x.due === tmk);
+  if (!list.length) return '';
+  return `<section class="section"><div class="sec-head"><h2>Yarın</h2><span class="count num">${list.length}</span></div>
+    <div class="todo-list">${list.map((x) => todoRow(x, false)).join('')}</div>
+    <p class="hint swipe-hint">Yarının işini bugün yapmak için sağa kaydır.</p></section>`;
 }
 
 function renderToday() {
@@ -644,12 +576,12 @@ function renderToday() {
 
   let habitsHtml;
   if (!S.habits.length) {
-    habitsHtml = `<div class="empty dashed"><h3>Çark boş dönüyor</h3><p>Bir alışkanlık ya da hobi ekle. İşaretlediğin her gün vazona bir halka olur.</p><button class="btn sm" data-act="new-habit">Alışkanlık ekle</button></div>`;
+    habitsHtml = `<div class="empty dashed"><h3>Henüz alışkanlık yok</h3><p>Bir alışkanlık ya da hobi ekle, her gün işaretledikçe serin büyüsün.</p><button class="btn sm" data-act="new-habit">Alışkanlık ekle</button></div>`;
   } else if (!list.length) {
     habitsHtml = `<div class="empty dashed"><p>${isT ? 'Bugün için planlı alışkanlık yok. Keyfine bak.' : 'Bu gün için planlı alışkanlık yoktu.'}</p></div>`;
   } else {
     habitsHtml = list.map((h) => habitCard(h, d)).join('');
-    if (doneN === list.length) habitsHtml += `<p class="small muted" style="text-align:center;padding-top:2px">${isT ? 'Bugünün halkası tam genişliğinde.' : 'Bu günün halkası tam.'}</p>`;
+    if (doneN === list.length) habitsHtml += `<p class="small muted" style="text-align:center;padding-top:2px">${isT ? 'Bugün hepsi tamam.' : 'Bu günün hepsi tamam.'}</p>`;
   }
 
   let todos;
@@ -666,9 +598,9 @@ function renderToday() {
 
   return `
   <header class="hello">
-    <div class="grow"><p class="eyebrow date">${fmtLong(t)}</p><h1>${greet}, <em>${esc(S.name)}</em></h1></div>
+    <div class="grow"><p class="eyebrow date">${fmtLong(t)}</p><h1>${greet}, ${esc(S.name)}</h1></div>
   </header>
-  ${stageHero(D)}
+  ${summaryCard(D, doneN + todoDone, list.length + todos.length)}
   <div class="week" role="group" aria-label="Bu hafta">${strip}</div>
   <section class="section">
     <div class="sec-head"><h2>${isT ? 'Alışkanlıklar' : fmtLong(d)}</h2>
@@ -679,7 +611,9 @@ function renderToday() {
     <div class="sec-head"><h2>${isT ? 'Bugünün görevleri' : 'Tamamlanan görevler'}</h2>${todos.length ? `<span class="count num">${todoDone}/${todos.length}</span>` : ''}</div>
     ${isT ? quickForm('quickToday') : ''}
     ${todosHtml}
-  </section>`;
+    ${isT && todos.some((x) => !x.done) ? SWIPE_HINT : ''}
+  </section>
+  ${isT ? tomorrowSection() : ''}`;
 }
 
 function renderHabits() {
@@ -706,32 +640,70 @@ function renderHabits() {
   const group = (title, arr) => arr.length ? `<section class="section"><div class="sec-head"><h2>${title}</h2><span class="count num">${arr.length}</span></div>${arr.map(card).join('')}</section>` : '';
   const body = S.habits.length
     ? group('Alışkanlıklar', habits) + group('Hobiler', hobbies) + '<p class="hint" style="text-align:center">Kutucuklar son 7 günü gösterir. Düzenlemek için karta dokun.</p>'
-    : `<div class="empty dashed"><h3>Henüz kil yok</h3><p>Su içmek, kitap okumak, resim yapmak… Takip etmek istediğin ilk şeyi ekle.</p><button class="btn sm" data-act="new-habit">Alışkanlık ekle</button></div>`;
+    : `<div class="empty dashed"><h3>Henüz alışkanlık yok</h3><p>Su içmek, kitap okumak, resim yapmak… Takip etmek istediğin ilk şeyi ekle.</p><button class="btn sm" data-act="new-habit">Alışkanlık ekle</button></div>`;
   return `<header class="page-head"><div><h1>Alışkanlıklar</h1><p class="sub">${S.habits.length ? `${habits.length} alışkanlık, ${hobbies.length} hobi` : 'Alışkanlıkların ve hobilerin burada durur'}</p></div><button class="btn sm" data-act="new-habit">${PLUS}Ekle</button></header>${body}`;
 }
 
+function renderPlan() {
+  const t = today(), cw = cycleWeek(t), w = ui.planWeek || cw;
+  const ws = addDays(weekStart(t), w === cw ? 0 : 7);
+  let days = '';
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(ws, i);
+    const items = S.routines.filter((r) => r.days.includes(i) && (r.week === 0 || r.week === w));
+    days += `<section class="plan-day ${dkey(d) === dkey(t) ? 'is-today' : ''}">
+      <div class="plan-head"><b>${DAYS_LONG[i]}</b><span class="muted small num">${fmtShort(d)}</span><span class="grow"></span><button class="add-mini" data-act="new-routine" data-w="${w}" data-d="${i}" aria-label="${DAYS_LONG[i]} gününe rutin ekle">${PLUS}</button></div>
+      ${items.length ? `<div class="todo-list">${items.map((r) => `<button class="plan-item" data-act="edit-routine" data-id="${r.id}"><span class="grow">${esc(r.title)}</span>${r.week === 0 ? '<span class="chip">Her hafta</span>' : ''}<span class="chip gold num">+${XP_TODO[r.size]} XP</span></button>`).join('')}</div>` : '<p class="plan-empty">Boş gün</p>'}
+    </section>`;
+  }
+  return `<div class="card pad row"><span class="grow"><b>Bu hafta ${cw}. hafta</b><span class="hint" style="display:block">Rutinler iki haftada bir tekrar eder ve o günün görevlerine kendiliğinden eklenir.</span></span><button class="btn sm ghost" data-act="flip-cycle">${cw === 1 ? 2 : 1}. hafta yap</button></div>
+  <div class="seg">${[1, 2].map((x) => `<button class="${w === x ? 'on' : ''}" data-act="plan-week" data-v="${x}" aria-pressed="${w === x}">${x}. hafta${cw === x ? ' · bu hafta' : ' · gelecek hafta'}</button>`).join('')}</div>
+  ${days}`;
+}
+
 function renderTodos() {
-  const t = today(), tk = dkey(t), tmk = dkey(addDays(t, 1));
+  const t = today(), tk = dkey(t), tmk = dkey(addDays(t, 1)), plan = ui.todoView === 'plan';
   const open = S.todos.filter((x) => !x.done);
+  const head = `<header class="page-head"><div><h1>Görevler</h1><p class="sub">${open.length ? `${open.length} açık görev` : 'Yapılacaklar listen'} · ${cycleWeek(t)}. hafta</p></div><button class="btn sm ghost" data-act="${plan ? 'new-routine' : 'new-todo'}">${plan ? 'Rutin ekle' : 'Tarihli ekle'}</button></header>
+  <div class="seg"><button class="${plan ? '' : 'on'}" data-act="todo-view" data-v="list" aria-pressed="${!plan}">Görevler</button><button class="${plan ? 'on' : ''}" data-act="todo-view" data-v="plan" aria-pressed="${plan}">2 haftalık rutin</button></div>`;
+  if (plan) return head + renderPlan();
+
   const byDue = (a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0);
   const groups = [
-    ['Gecikenler', open.filter((x) => x.due && x.due < tk).sort(byDue), false],
-    ['Bugün', open.filter((x) => x.due === tk), false],
-    ['Yarın', open.filter((x) => x.due === tmk), false],
-    ['Yaklaşanlar', open.filter((x) => x.due && x.due > tmk).sort(byDue), true],
-    ['Tarihsiz', open.filter((x) => !x.due), false],
+    ['Gecikenler', open.filter((x) => x.due && x.due < tk).sort(byDue)],
+    ['Bugün', open.filter((x) => x.due === tk)],
+    ['Yarın', open.filter((x) => x.due === tmk)],
   ];
-  let body = groups.filter((g) => g[1].length).map(([title, arr, showDue]) =>
-    `<section class="section"><div class="sec-head"><h2>${title}</h2><span class="count num">${arr.length}</span></div><div class="todo-list">${arr.map((x) => todoRow(x, showDue)).join('')}</div></section>`).join('');
+  const sec = (title, arr, showDue) => `<section class="section"><div class="sec-head"><h2>${title}</h2><span class="count num">${arr.length}</span></div><div class="todo-list">${arr.map((x) => todoRow(x, showDue)).join('')}</div></section>`;
+  let body = groups.filter((g) => g[1].length).map(([title, arr]) => sec(title, arr, false)).join('');
+  if (open.some((x) => x.due)) body += SWIPE_HINT;
+
+  // Sonraki günler: gün gün
+  const later = open.filter((x) => x.due && x.due > tmk).sort(byDue);
+  if (later.length) {
+    let daysHtml = '';
+    if (ui.showLater) {
+      const byDay = {};
+      later.forEach((x) => { (byDay[x.due] = byDay[x.due] || []).push(x); });
+      daysHtml = Object.keys(byDay).sort().map((k) => {
+        const d = parse(k);
+        return `<div class="day-head"><b>${DAYS_LONG[mdow(d)]}</b><span class="num">${fmtShort(d)}</span><span class="chip">${cycleWeek(d)}. hafta</span></div><div class="todo-list">${byDay[k].map((x) => todoRow(x, false)).join('')}</div>`;
+      }).join('');
+    }
+    body += `<section class="section"><div class="sec-head"><h2>Sonraki günler</h2><button class="link-btn" data-act="toggle-later">${ui.showLater ? 'Gizle' : `Göster (${later.length})`}</button></div>${daysHtml}</section>`;
+  }
+  const undated = open.filter((x) => !x.due);
+  if (undated.length) body += sec('Tarihsiz', undated, false);
+
   const done = S.todos.filter((x) => x.done).sort((a, b) => (a.doneAt < b.doneAt ? 1 : a.doneAt > b.doneAt ? -1 : 0));
   if (!open.length) {
-    body += `<div class="empty dashed"><h3>${done.length ? 'Liste tertemiz' : 'Henüz görev yok'}</h3><p>${done.length ? 'Açık görevin kalmadı. Yeni bir şey çıkarsa yukarıya yaz.' : 'Yukarıya yaz, Enter\'a bas. Büyük görevler daha çok XP kazandırır.'}</p></div>`;
+    body += `<div class="empty dashed"><h3>${done.length ? 'Liste tertemiz' : 'Henüz görev yok'}</h3><p>${done.length ? 'Açık görevin kalmadı. Yeni bir şey çıkarsa yukarıya yaz.' : 'Yukarıya yaz, Enter\'a bas. Tekrar eden işler için "2 haftalık rutin" sekmesine bak.'}</p></div>`;
   }
   if (done.length) {
     body += `<section class="section"><div class="sec-head"><h2>Tamamlananlar</h2><button class="link-btn" data-act="toggle-done">${ui.showDone ? 'Gizle' : `Göster (${done.length})`}</button></div>
       ${ui.showDone ? `<div class="todo-list">${done.slice(0, 40).map((x) => todoRow(x, false)).join('')}</div>` : ''}</section>`;
   }
-  return `<header class="page-head"><div><h1>Görevler</h1><p class="sub">${open.length ? `${open.length} açık görev` : 'Yapılacaklar listen'}</p></div><button class="btn sm ghost" data-act="new-todo">Tarihli ekle</button></header>${quickForm('quickTodos')}${body}`;
+  return head + quickForm('quickTodos') + body;
 }
 
 function renderStats() {
@@ -754,7 +726,7 @@ function renderStats() {
   const head = `<header class="page-head"><div><h1>Analiz</h1><p class="sub">Emeğinin karşılığı burada görünür</p></div></header>
   <div class="seg" role="tablist"><button role="tab" aria-selected="${week}" class="${week ? 'on' : ''}" data-act="stats-mode" data-v="week">Haftalık</button><button role="tab" aria-selected="${!week}" class="${week ? '' : 'on'}" data-act="stats-mode" data-v="month">Aylık</button></div>
   <div class="period"><button class="nav-btn" data-act="stats-nav" data-v="-1" aria-label="Önceki dönem">${ICON.left}</button>
-    <h2>${title}${week && ui.statsOff >= -1 ? `<span class="small muted" style="display:block;font-family:var(--font-body);font-weight:700">${fmtShort(start)} – ${fmtShort(end)}</span>` : ''}</h2>
+    <h2>${title}${week && ui.statsOff >= -1 ? `<span class="small muted" style="display:block;font-weight:600">${fmtShort(start)} – ${fmtShort(end)}</span>` : ''}</h2>
     <button class="nav-btn" data-act="stats-nav" data-v="1" aria-label="Sonraki dönem" ${ui.statsOff >= 0 ? 'disabled' : ''}>${ICON.right}</button></div>`;
 
   if (!S.habits.length && !S.todos.length) {
@@ -815,14 +787,7 @@ function renderStats() {
       else c = x.rate >= 1 ? 'h4' : x.rate >= 0.7 ? 'h3' : x.rate >= 0.4 ? 'h2' : x.rate > 0 ? 'h1' : 'h0';
       return `<button class="hc ${c} ${x.k === ui.pick ? 'sel' : ''} ${x.k === tk ? 'is-today' : ''}" data-act="pick" data-k="${x.k}" ${x.future ? 'disabled' : ''} aria-label="${fmtShort(x.d)}: ${x.future ? 'henüz gelmedi' : x.rate == null ? 'plan yok' : pct(x.rate)}">${x.d.getDate()}</button>`;
     }).join('');
-    const VM = vaseModel(start.getFullYear(), start.getMonth());
-    const vbits = [];
-    if (VM.perfect) vbits.push(`${VM.perfect} kusursuz gün`);
-    if (VM.gold) vbits.push(`${VM.gold} altın damar`);
-    if (VM.open) vbits.push(`${VM.open} açık çatlak`);
-    main = `<section class="card month-vase"><div class="thumb"><img data-thumb="${VM.ym}" alt="${VM.title} vazosu"></div>
-      <div class="grow"><span class="eyebrow">${VM.cur ? 'Çarktaki vazo' : 'Raftaki vazo'}</span><h3>${MONTHS[start.getMonth()]} · ${VM.shapeName}</h3><p class="small muted">${vbits.length ? vbits.join(', ') : 'Her gün bir halka. Silüet bu ayın grafiği.'}</p></div></section>
-    <section class="card panel"><h3>Ay takvimi</h3><div class="heat">${cells}</div>
+    main = `<section class="card panel"><h3>Ay takvimi</h3><div class="heat">${cells}</div>
       <div class="heat-legend"><span>Az</span><i style="background:var(--heat-0)"></i><i style="background:var(--heat-1)"></i><i style="background:var(--heat-2)"></i><i style="background:var(--heat-3)"></i><i style="background:var(--heat-4)"></i><span>Çok</span></div>
       <p class="chart-note">${note}</p></section>`;
 
@@ -862,68 +827,35 @@ function renderStats() {
 }
 
 function renderGarden() {
-  const D = derive(), lv = D.lvl, c = D.ctx, t = today(), nowYm = ymOf(t);
-  const months = vaseMonths();
-  const ym = ui.vaseYm && months.includes(ui.vaseYm) ? ui.vaseYm : nowYm;
-  const [vy, vm] = ym.split('-').map(Number);
-  const M = vaseModel(vy, vm - 1);
-  const rIdx = rankOf(lv.level);
-  const bits = [];
-  if (M.rate != null) bits.push(`<span class="chip num">${pct(M.rate)} dolu</span>`);
-  if (M.perfect) bits.push(`<span class="chip num">${M.perfect} kusursuz gün</span>`);
-  if (M.gold) bits.push(`<span class="chip gold num">${M.gold} altın damar</span>`);
-  if (M.open) bits.push(`<span class="chip late num">${M.open} açık çatlak</span>`);
-  const glazes = GLAZES.map((g) => {
-    const locked = lv.level < g.lvl;
-    return `<button class="glaze ${M.glaze.id === g.id ? 'on' : ''} ${locked ? 'locked' : ''}" data-act="glaze" data-v="${g.id}" ${locked ? 'disabled' : ''} aria-pressed="${M.glaze.id === g.id}" aria-label="${g.name}${locked ? `, seviye ${g.lvl} olunca açılır` : ''}"><i style="--g:${css(g.rgb)}"></i>${g.name}${locked ? `<small>Seviye ${g.lvl}</small>` : ''}</button>`;
-  }).join('');
-  const shelf = months.map((x) => {
-    const [y, m] = x.split('-').map(Number);
-    return `<button class="shelf-item ${x === ym ? 'on' : ''}" data-act="shelf" data-v="${x}" aria-pressed="${x === ym}"><div class="thumb"><img data-thumb="${x}" alt=""></div><div class="nm">${MONTHS[m - 1]}</div><div class="ds">${x === nowYm ? 'çarkta' : y}</div></button>`;
-  }).join('');
-  const ranks = RANKS.map((r, i) => `<div class="rank ${i === rIdx ? 'cur' : ''} ${i > rIdx ? 'locked' : ''}"><b>${r.name}</b><span>Seviye ${r.lvl}</span></div>`).join('');
+  const D = derive(), lv = D.lvl, c = D.ctx;
   const earned = BADGES.filter((b) => S.badges[b.id]).length;
   const badges = BADGES.map((b) => `<div class="badge ${S.badges[b.id] ? '' : 'locked'}"><div class="medal">${b.icon}</div><div class="nm">${b.name}</div><div class="ds">${b.desc}</div></div>`).join('');
   const themeBtn = (v, tx) => `<button class="${S.theme === v ? 'on' : ''}" data-act="theme" data-v="${v}" aria-pressed="${S.theme === v}">${tx}</button>`;
-  return `<header class="page-head"><div><h1>Atölye</h1><p class="sub">Her gün bir halka, her ay bir vazo</p></div></header>
-  <section class="stage big">
-    <div class="vase-slot"></div>
-    <div class="plate"><span class="eyebrow">${M.cur ? 'Çarkta' : 'Rafta'}</span><b>${M.title}</b><span class="num">${M.shapeName} · ${M.upto} / ${M.n} halka</span></div>
-    ${kilnChip(D)}
-    ${rankFoot(D, 'div')}
+  return `<header class="page-head"><div><h1>Profil</h1><p class="sub">Seviyen, rozetlerin ve ayarlar</p></div></header>
+  <section class="card pad level-card">
+    <div class="lvl-row"><span class="lvl-big">Seviye ${lv.level}</span><span class="sum-streak">${flame(20, D.streak > 0, D.litToday)}<b class="num">${D.streak}</b> gün seri</span></div>
+    <div class="xpbar"><i style="width:${Math.round(lv.pct * 100)}%"></i></div>
+    <div class="xp-meta"><span class="num">${lv.into} / ${lv.span} XP</span><span class="num">Sonraki seviyeye ${lv.left} XP</span></div>
   </section>
-  <div class="row" style="flex-wrap:wrap;gap:6px;justify-content:center">${bits.join('') || '<span class="hint">Vazoyu parmağınla döndürebilirsin.</span>'}${M.cur ? '' : '<button class="link-btn" data-act="shelf" data-v="">Bu aya dön</button>'}</div>
-  <section class="section"><div class="sec-head"><h2>Raf</h2><span class="count num">${months.length} vazo</span></div><div class="shelf">${shelf}</div></section>
-  <section class="section"><div class="sec-head"><h2>Vazo nasıl okunur?</h2></div>
-    <div class="card pad legend">
-      <div><i class="lg-wide"></i><span><b>Geniş halka.</b> O gün alışkanlıkların çoğu tamam.</span></div>
-      <div><i class="lg-thin"></i><span><b>Dar halka.</b> Eksik kalan bir gün. Vazo orada incelir.</span></div>
-      <div><i class="lg-gold"></i><span><b>Altın damar.</b> Kaçan bir gün çatlak bırakır. Geri döndüğünde altınla onarılır.</span></div>
-      <div><i class="lg-pearl"></i><span><b>İnci çizgisi.</b> Kusursuz gün, hepsi tamam.</span></div>
-      <div><i class="lg-clay"></i><span><b>Islak kil.</b> Bugünün halkası. İşaretledikçe yükselir.</span></div>
-    </div>
-  </section>
-  <section class="section"><div class="sec-head"><h2>Sır</h2><span class="count">${M.cur ? 'bu ayın rengi' : MONTHS[vm - 1]}</span></div>
-    <div class="card pad"><div class="glazes">${glazes}</div><p class="hint" style="margin-top:10px">Halkaların tonu, o gün yaptığın alışkanlıkların renginden gelir.</p></div>
-  </section>
-  <section class="section"><div class="sec-head"><h2>Unvanlar</h2></div><div class="ranks">${ranks}</div></section>
   <div class="tiles">
-    <div class="tile"><div class="lab">Toplam XP</div><div class="val">${D.total}</div><div class="delta num">Sonraki seviyeye ${lv.left}</div></div>
-    <div class="tile"><div class="lab">Seri</div><div class="val">${flame(22, D.streak > 0, false)} ${D.streak}<small> gün</small></div><div class="delta num">En uzun ${c.bestStreak} gün</div></div>
+    <div class="tile"><div class="lab">Toplam XP</div><div class="val">${D.total}</div></div>
+    <div class="tile"><div class="lab">En uzun seri</div><div class="val">${c.bestStreak}<small> gün</small></div></div>
+    <div class="tile"><div class="lab">Alışkanlık</div><div class="val">${c.totalDone}<small> işaret</small></div></div>
+    <div class="tile"><div class="lab">Biten görev</div><div class="val">${c.todosDone}</div></div>
   </div>
   <section class="section"><div class="sec-head"><h2>Rozetler</h2><span class="count num">${earned}/${BADGES.length}</span></div><div class="badges">${badges}</div></section>
   <section class="section"><div class="sec-head"><h2>XP nasıl kazanılır?</h2></div>
     <div class="card pad stack small">
       <div class="row"><span class="chip gold num">+${XP_HABIT} XP</span><span>Tamamlanan her alışkanlık ya da hobi</span></div>
       <div class="row"><span class="chip gold num">+${XP_PERFECT} XP</span><span>Günün bütün alışkanlıkları bitince</span></div>
-      <div class="row"><span class="chip gold num">+5 / 10 / 20</span><span>Küçük, orta ve büyük görevler</span></div>
+      <div class="row"><span class="chip gold num">+5 / 10 / 20</span><span>Küçük, orta ve büyük görevler, rutinler dahil</span></div>
       <div class="row"><span class="chip gold num">+${XP_BADGE} XP</span><span>Kazanılan her rozet</span></div>
     </div>
   </section>
   <section class="section"><div class="sec-head"><h2>Ayarlar</h2></div>
     <div class="card pad stack" style="gap:18px">
       <div class="setting"><label for="setName">Adın</label><input class="field" id="setName" value="${esc(S.name)}" maxlength="24" autocomplete="off"></div>
-      <div class="setting"><span class="lab2">Görünüm</span><div class="seg">${themeBtn('auto', 'Otomatik')}${themeBtn('light', 'Çini beyazı')}${themeBtn('dark', 'Gece atölyesi')}</div></div>
+      <div class="setting"><span class="lab2">Görünüm</span><div class="seg">${themeBtn('auto', 'Otomatik')}${themeBtn('light', 'Açık')}${themeBtn('dark', 'Koyu')}</div></div>
       <div class="setting"><span class="lab2">Yedek</span>
         <div class="row"><button class="btn ghost sm grow" data-act="export">Yedeği indir</button><button class="btn ghost sm grow" data-act="import">Yedekten yükle</button></div>
         <input type="file" id="importFile" accept="application/json,.json" hidden>
@@ -940,7 +872,6 @@ function render(enter) {
   const v = $('#view');
   v.innerHTML = VIEWS[ui.tab]();
   ui.flash = null;
-  mountVase();
   if (enter) { v.classList.remove('enter'); void v.offsetWidth; v.classList.add('enter'); }
   document.querySelectorAll('#tabbar button').forEach((b) => {
     const on = b.dataset.tab === ui.tab;
@@ -1074,6 +1005,42 @@ function saveTodo() {
   after();
 }
 
+/* ---- rutin formu ---- */
+function openRoutineForm(id, w, d) {
+  const r = id ? S.routines.find((x) => x.id === id) : null;
+  draft = r
+    ? { form: 'routine', id: r.id, title: r.title, week: r.week, days: [...r.days], size: r.size }
+    : { form: 'routine', id: null, title: '', week: w != null ? w : (ui.planWeek || cycleWeek(today())), days: d != null ? [d] : [], size: 'm' };
+  drawRoutineForm();
+  if (!r) setTimeout(() => { const el = $('#rfTitle'); if (el) el.focus(); }, 320);
+}
+function drawRoutineForm() {
+  const d = draft, editing = !!d.id;
+  const wk = (v, tx) => `<button class="${d.week === v ? 'on' : ''}" data-act="rf-week" data-v="${v}" aria-pressed="${d.week === v}">${tx}</button>`;
+  setSheet(`${sheetHead(editing ? 'Rutini düzenle' : 'Yeni rutin')}
+  <div class="sheet-body">
+    <div class="setting"><label for="rfTitle">Ne yapılacak?</label><input class="field" id="rfTitle" data-bind="title" value="${esc(d.title)}" placeholder="Örn. Çarşafları değiştir" maxlength="120" autocomplete="off" enterkeyhint="done"></div>
+    <div class="setting"><span class="lab2">Hangi hafta?</span><div class="seg">${wk(1, '1. hafta')}${wk(2, '2. hafta')}${wk(0, 'Her hafta')}</div></div>
+    <div class="setting"><span class="lab2">Hangi günler?</span><div class="daypick">${DAYS.map((x, i) => `<button class="${d.days.includes(i) ? 'on' : ''}" data-act="rf-day" data-v="${i}" aria-pressed="${d.days.includes(i)}">${x}</button>`).join('')}</div></div>
+    <div class="setting"><span class="lab2">Ne kadar büyük?</span><div class="seg">${['s', 'm', 'l'].map((x) => `<button class="${d.size === x ? 'on' : ''}" data-act="rf-size" data-v="${x}" aria-pressed="${d.size === x}">${SIZE_NAME[x]} · +${XP_TODO[x]} XP</button>`).join('')}</div></div>
+    <p class="hint">Rutin, seçtiğin günlerde görev olarak listene düşer. O günkü görevi erteleyebilir ya da öne alabilirsin; rutin planı değişmez.</p>
+  </div>
+  <div class="sheet-foot">${editing ? `<button class="btn danger" data-act="rf-delete" aria-label="Sil">${ICON.trash}</button>` : ''}<button class="btn" data-act="rf-save">${editing ? 'Kaydet' : 'Ekle'}</button></div>`);
+}
+function saveRoutine() {
+  const d = draft, title = d.title.trim();
+  if (!title) { shake('#rfTitle'); return; }
+  if (!d.days.length) { toast('📅', 'En az bir gün seç'); return; }
+  const fields = { title, week: d.week, days: [...d.days].sort(), size: d.size };
+  let id = d.id;
+  if (id) Object.assign(S.routines.find((x) => x.id === id), fields);
+  else { id = uid(); S.routines.push(Object.assign({ id }, fields)); }
+  rebuildRoutine(id);
+  syncRoutines();
+  closeSheet();
+  after();
+}
+
 /* ---- ilk açılış ---- */
 function openOnboarding() {
   draft = { form: 'onboard', sel: [0, 1, 2] };
@@ -1082,12 +1049,12 @@ function openOnboarding() {
 function drawOnboarding() {
   setSheet(`${sheetHead(`Hoş geldin, ${esc(S.name)}`)}
   <div class="sheet-body">
-    <p class="manifesto">Burası senin atölyen. Her gün çarkta <em>bir halka</em> çevirirsin. Günün ne kadar doluysa halka o kadar geniş olur. Ay bittiğinde ortaya bir vazo çıkar ve hiçbiri diğerine benzemez. Bir gün kaçarsa çatlak kalır, ama döndüğünde <em>altınla onarılır</em>.</p>
+    <p class="muted">Alışkanlıklarını, hobilerini ve görevlerini buradan takip edersin. Tamamladıkça XP kazanır, seviye atlarsın. İki haftalık rutinlerin o günün görevlerine kendiliğinden eklenir.</p>
     <div class="setting"><span class="lab2">Başlamak için birkaçını seç</span>
       <div class="starters">${STARTERS.map((s, i) => `<button class="starter ${draft.sel.includes(i) ? 'on' : ''}" data-act="ob-pick" data-v="${i}" aria-pressed="${draft.sel.includes(i)}"><span>${s.emoji}</span>${s.name}</button>`).join('')}</div>
       <p class="hint">Hepsini sonradan değiştirebilir, kendi alışkanlıklarını ekleyebilirsin.</p></div>
   </div>
-  <div class="sheet-foot"><button class="btn ghost" data-act="close-sheet">Kendim eklerim</button><button class="btn" data-act="ob-go">Çarkı döndür</button></div>`);
+  <div class="sheet-foot"><button class="btn ghost" data-act="close-sheet">Kendim eklerim</button><button class="btn" data-act="ob-go">Başla</button></div>`);
 }
 
 /* ================= işlemler ================= */
@@ -1095,18 +1062,15 @@ function bumpHabit(id, delta, ev) {
   const h = findH(id); if (!h) return;
   const k = dkey(ui.day), before = cnt(h, k), wasDone = before >= h.target;
   const wasPerfect = derive().perfect.has(k);
-  const openBefore = window.Vase ? curModel().open : 0;
   const c = h.target === 1 ? (before ? 0 : 1) : clamp(before + delta, 0, 999);
   if (c) h.log[k] = c; else delete h.log[k];
   const nowDone = c >= h.target;
   if (nowDone && !wasDone) ui.flash = id;
   after();
-  if (window.Vase && c !== before) window.Vase.kick();
   if (nowDone && !wasDone) {
     xpFloat(ev, `+${XP_HABIT} XP`); buzz(14);
-    if (window.Vase && openBefore > 0 && curModel().open < openBefore) toast('⚜️', 'Çatlak altınla onarıldı', 'Kaçan gün artık vazonun en güzel yeri');
     if (!wasPerfect && derive().perfect.has(k)) {
-      setTimeout(() => { toast('🌟', 'Kusursuz gün', `Halkana inci çizgisi çekildi, +${XP_PERFECT} XP`); confetti(); buzz([20, 40, 20]); }, 380);
+      setTimeout(() => { toast('🌟', 'Kusursuz gün', `Hepsini tamamladın, +${XP_PERFECT} XP`); confetti(); buzz([20, 40, 20]); }, 380);
     }
   } else if (c > before) buzz(8);
 }
@@ -1120,9 +1084,26 @@ function toggleTodo(id, ev) {
   if (td.done) { xpFloat(ev, `+${XP_TODO[td.size]} XP`); buzz(14); }
 }
 
+// dir > 0: bugüne al, dir < 0: bir gün ertele
+function shiftTodo(id, dir) {
+  const td = findT(id); if (!td || td.done) return;
+  const t = today(), tk = dkey(t);
+  if (dir > 0) {
+    if (td.due === tk) return;
+    td.due = tk;
+    toast('☀️', 'Bugüne alındı', td.title);
+  } else {
+    const base = td.due && td.due > tk ? parse(td.due) : t;
+    td.due = dkey(addDays(base, 1));
+    toast('🌙', td.due === dkey(addDays(t, 1)) ? 'Yarına ertelendi' : `${dueLabel(td)} gününe ertelendi`, td.title);
+  }
+  buzz(10);
+  after();
+}
+
 function switchTab(tab) {
   if (!VIEWS[tab]) return;
-  ui.tab = tab; ui.pick = null; ui.vaseYm = null;
+  ui.tab = tab; ui.pick = null;
   if (tab === 'today') ui.day = today();
   render(true);
   window.scrollTo(0, 0);
@@ -1185,7 +1166,7 @@ const ACT = {
     const tk = dkey(today());
     picks.forEach((s) => S.habits.push({ id: uid(), name: s.name, emoji: s.emoji, color: s.color, kind: s.kind, freq: { type: s.freq.type, days: [0, 1, 2, 3, 4], times: s.freq.times || 3 }, target: s.target, unit: s.unit, createdAt: tk, log: {} }));
     closeSheet(); after();
-    if (picks.length) toast('🏺', 'Çark dönmeye hazır', 'İlk alışkanlığını işaretle, ilk halkanı çevir');
+    if (picks.length) toast('🌱', 'Hazırsın', 'İlk alışkanlığını işaretle, ilk XP puanını kazan');
   },
 
   'stats-mode': (el) => { ui.statsMode = el.dataset.v; ui.statsOff = 0; ui.pick = null; render(); },
@@ -1193,13 +1174,35 @@ const ACT = {
   pick: (el) => { ui.pick = ui.pick === el.dataset.k ? null : el.dataset.k; render(); },
 
   theme: (el) => { S.theme = el.dataset.v; save(); applyTheme(); render(); },
-  glaze: (el) => { const g = GLAZES.find((x) => x.id === el.dataset.v); if (!g || derive().lvl.level < g.lvl) return; S.glazes[ui.vaseYm || ymOf(today())] = g.id; save(); render(); if (window.Vase) window.Vase.kick(); },
-  shelf: (el) => { ui.vaseYm = el.dataset.v || null; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); },
+
+  'todo-view': (el) => { ui.todoView = el.dataset.v; ui.planWeek = null; render(); },
+  'toggle-later': () => { ui.showLater = !ui.showLater; render(); },
+  'plan-week': (el) => { ui.planWeek = +el.dataset.v; render(); },
+  'flip-cycle': () => {
+    S.cycleStart = dkey(addDays(parse(S.cycleStart), 7));
+    S.routines.forEach((r) => rebuildRoutine(r.id));
+    syncRoutines(); ui.planWeek = null;
+    after();
+    toast('🔁', `Bu hafta artık ${cycleWeek(today())}. hafta`);
+  },
+  'new-routine': (el) => openRoutineForm(null, el.dataset.w != null ? +el.dataset.w : null, el.dataset.d != null ? +el.dataset.d : null),
+  'edit-routine': (el) => openRoutineForm(el.dataset.id),
+  'rf-week': (el) => { draft.week = +el.dataset.v; drawRoutineForm(); },
+  'rf-day': (el) => { const i = +el.dataset.v, at = draft.days.indexOf(i); if (at >= 0) draft.days.splice(at, 1); else draft.days.push(i); drawRoutineForm(); },
+  'rf-size': (el) => { draft.size = el.dataset.v; drawRoutineForm(); },
+  'rf-save': () => saveRoutine(),
+  'rf-delete': () => {
+    const r = S.routines.find((x) => x.id === draft.id); if (!r) return;
+    confirmSheet({
+      title: 'Rutin silinsin mi?', text: `"${esc(r.title)}" plandan çıkar ve bekleyen görevleri silinir. Tamamladıkların kalır.`, yes: 'Sil', danger: true,
+      onYes: () => { S.todos = S.todos.filter((x) => !(x.rid === r.id && !x.done)); S.routines = S.routines.filter((x) => x.id !== r.id); after(); toast('🍂', 'Rutin silindi', r.title); },
+    });
+  },
   export: () => {
     try {
       const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = `atolye-yedek-${dkey(today())}.json`;
+      a.href = URL.createObjectURL(blob); a.download = `plan-yedek-${dkey(today())}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
       toast('💾', 'Yedek indirildi');
@@ -1208,11 +1211,56 @@ const ACT = {
   import: () => { const f = $('#importFile'); if (f) f.click(); },
   reset: () => confirmSheet({
     title: 'Her şey silinsin mi?', text: 'Bütün alışkanlıklar, görevler, seviyen ve rozetlerin silinecek. Bu işlem geri alınamaz. Emin değilsen önce yedek al.', yes: 'Sıfırla', danger: true,
-    onYes: () => { S = blank(); memo = null; save(); applyTheme(); ui.tab = 'today'; render(true); openOnboarding(); },
+    onYes: () => { S = blank(); applyPreset(); syncRoutines(); memo = null; save(); applyTheme(); ui.tab = 'today'; render(true); openOnboarding(); },
   }),
 };
 
+/* ---- görevlerde kaydırma: sola ertele, sağa bugüne al ---- */
+const SWIPE_T = 76;
+let sw = null, swipedAt = 0;
+document.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  const row = e.target.closest && e.target.closest('.swipe');
+  if (!row || (row.dataset.l !== '1' && row.dataset.r !== '1')) return;
+  sw = { row, el: row.querySelector('.todo'), x: e.clientX, y: e.clientY, dx: 0, on: false, pid: e.pointerId };
+});
+document.addEventListener('pointermove', (e) => {
+  if (!sw || e.pointerId !== sw.pid) return;
+  const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+  if (!sw.on) {
+    if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { sw = null; return; }
+    if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    sw.on = true;
+    sw.row.classList.add('dragging');
+    try { sw.el.setPointerCapture(e.pointerId); } catch (err) { /* yok */ }
+  }
+  const ok = dx > 0 ? sw.row.dataset.r === '1' : sw.row.dataset.l === '1';
+  sw.dx = ok ? dx : dx * 0.15;
+  sw.el.style.transform = `translateX(${sw.dx}px)`;
+  sw.row.classList.toggle('dir-r', dx > 0);
+  sw.row.classList.toggle('dir-l', dx < 0);
+  sw.row.classList.toggle('armed', ok && Math.abs(dx) > SWIPE_T);
+});
+function endSwipe(e, cancel) {
+  if (!sw || (e && e.pointerId !== sw.pid)) return;
+  const s0 = sw; sw = null;
+  if (!s0.on) return;
+  swipedAt = Date.now();
+  s0.row.classList.remove('dragging');
+  if (!cancel && s0.row.classList.contains('armed')) {
+    const dir = s0.dx > 0 ? 1 : -1;
+    s0.el.style.transform = `translateX(${dir * 110}%)`;
+    setTimeout(() => shiftTodo(s0.row.dataset.id, dir), 160);
+  } else {
+    s0.el.style.transform = '';
+    s0.row.classList.remove('dir-r', 'dir-l', 'armed');
+  }
+}
+document.addEventListener('pointerup', (e) => endSwipe(e, false));
+document.addEventListener('pointercancel', (e) => endSwipe(e, true));
+
 document.addEventListener('click', (e) => {
+  if (Date.now() - swipedAt < 350) return;
   const el = e.target.closest('[data-act]');
   if (!el || el.disabled) return;
   const fn = ACT[el.dataset.act];
@@ -1243,6 +1291,7 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Enter' && draft && e.target.matches && e.target.matches('#hfName, #hfUnit')) { e.preventDefault(); saveHabit(); }
   else if (e.key === 'Enter' && draft && e.target.id === 'tfTitle') { e.preventDefault(); saveTodo(); }
+  else if (e.key === 'Enter' && draft && e.target.id === 'rfTitle') { e.preventDefault(); saveRoutine(); }
 });
 
 document.addEventListener('change', (e) => {
@@ -1255,10 +1304,10 @@ document.addEventListener('change', (e) => {
     rd.onload = () => {
       let obj = null;
       try { obj = JSON.parse(rd.result); } catch (err) { obj = null; }
-      if (!obj || !Array.isArray(obj.habits) || !Array.isArray(obj.todos)) { toast('⚠️', 'Bu dosya okunamadı', 'Atölye yedeği olan .json dosyasını seç'); return; }
+      if (!obj || !Array.isArray(obj.habits) || !Array.isArray(obj.todos)) { toast('⚠️', 'Bu dosya okunamadı', 'Uygulamadan indirilen yedek .json dosyasını seç'); return; }
       confirmSheet({
         title: 'Yedek yüklensin mi?', text: `Yedekte ${obj.habits.length} alışkanlık ve ${obj.todos.length} görev var. Şu anki verilerin yerine bunlar gelecek.`, yes: 'Yükle',
-        onYes: () => { S = normalize(obj); S.onboarded = true; memo = null; save(); applyTheme(); render(true); toast('🌿', 'Yedek yüklendi'); },
+        onYes: () => { S = normalize(obj); S.onboarded = true; applyPreset(); syncRoutines(); memo = null; save(); applyTheme(); render(true); toast('🌿', 'Yedek yüklendi'); },
       });
     };
     rd.readAsText(file);
@@ -1270,7 +1319,7 @@ document.addEventListener('change', (e) => {
 let lastDay = dkey(today());
 function refreshIfNewDay() {
   const k = dkey(today());
-  if (k !== lastDay) { lastDay = k; ui.day = today(); memo = null; render(); monthReveal(); }
+  if (k !== lastDay) { lastDay = k; ui.day = today(); memo = null; if (syncRoutines()) save(); render(); }
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshIfNewDay(); });
 setInterval(refreshIfNewDay, 60000);
@@ -1284,10 +1333,11 @@ if (window.matchMedia) {
 applyTheme();
 // Geçmişte kazanılmış seviyeleri yeniden kutlama
 S.celebratedLevel = Math.max(S.celebratedLevel, 1);
+const presetBefore = S.presetV;
+applyPreset();
+if (syncRoutines() || S.presetV !== presetBefore) save();
 render();
-if (!S.onboarded && !S.habits.length && !S.todos.length) openOnboarding();
-else monthReveal();
-if (!S.seenMonth) { S.seenMonth = ymOf(today()); save(); }
+if (!S.onboarded) openOnboarding();
 
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && location.hostname !== 'localhost') {
   window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => { /* çevrimdışı destek isteğe bağlı */ }); });
