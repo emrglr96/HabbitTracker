@@ -323,7 +323,10 @@ function routineOn(r, d) {
   return r.days.includes((n % CYCLE) + 1) && Math.floor(n / CYCLE) % (r.every || 1) === 0;
 }
 const TAGS = ['Oda döngüsü', 'Periyodik', 'Küçük iş'];
+// Gün sayacı: başlangıç günü 1. gün sayılır, her gün kendiliğinden bir artar
 const counterDay = (c) => Math.round((today() - parse(c.start)) / 864e5) + 1;
+const SINCE = ['tan', 'tan', 'tan', 'dan', 'tan', 'dan', 'dan', 'tan', 'den', 'den', 'dan', 'tan'];
+const sinceLabel = (k) => { const d = parse(k); return `${d.getDate()} ${MONTHS[d.getMonth()]}'${SINCE[d.getMonth()]} beri`; };
 
 // Bugünden başlayarak 14 günün rutin görevlerini üretir. Üretilen her tekrar bir kez üretilir.
 function syncRoutines() {
@@ -525,7 +528,7 @@ function countersRow() {
   if (!S.counters.length) return '';
   return `<div class="counters">${S.counters.map((c) => {
     const n = counterDay(c);
-    return `<button class="counter-pill" data-act="edit-counter" data-id="${c.id}" aria-label="${esc(c.title)}: düzenle"><span class="ce">${esc(c.emoji)}</span><span><b class="num">${n > 0 ? `${n}. gün` : `${1 - n} gün sonra`}</b><small>${esc(c.title)}</small></span></button>`;
+    return `<button class="counter-pill" data-act="edit-counter" data-id="${c.id}" aria-label="${esc(c.title)}: düzenle"><span class="ce">${esc(c.emoji)}</span><span><b class="num">${n > 0 ? `${n}. gün` : `${1 - n} gün sonra`}</b><small>${esc(c.title)}${n > 0 ? ' · ' + sinceLabel(c.start) : ''}</small></span></button>`;
   }).join('')}</div>`;
 }
 
