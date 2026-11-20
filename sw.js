@@ -1,5 +1,5 @@
 /* Çevrimdışı kullanım: önce ağ, olmazsa önbellek. */
-const CACHE = 'plan-v3';
+const CACHE = 'plan-v4';
 const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
