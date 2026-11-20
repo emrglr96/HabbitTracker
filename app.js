@@ -1,4 +1,4 @@
-/* Ceyda'nın Planı: alışkanlıklar, görevler, 14 günlük ev işleri döngüsü ve takvim. Veriler yalnızca bu cihazda saklanır. */
+/* Ceyda'nın Planı: alışkanlıklar, görevler, 14 günde bir tekrar eden ev işleri rutini ve takvim. Veriler yalnızca bu cihazda saklanır. */
 (() => {
 'use strict';
 
@@ -27,6 +27,9 @@ const pct = (r) => `%${Math.round(r * 100)}`;
 
 /* ================= sabitler ================= */
 const SIZE_OK = { s: 1, m: 1, l: 1 };
+const ROUTINE_COLORS = 5;
+// Eski sürümde tür adıyla saklanan rutinler renge çevrilir
+const OLD_TAG = { 'Oda döngüsü': 0, 'Periyodik': 1, 'Küçük iş': 2 };
 
 const TINTS = ['#CFE6B8', '#BFE0EE', '#F9E3A0', '#FBD0AE', '#F8C6CF', '#DCCBF0', '#BDE8D8', '#E7C8AE'];
 const EMOJIS = ['🌱', '💧', '📚', '🚶‍♀️', '🏃‍♀️', '🧘‍♀️', '🥗', '😴', '🦷', '💊', '✍️', '🎨', '🎸', '🎹', '🧶', '🪴', '📷', '🍳', '🧁', '☕', '🚴‍♀️', '🏊‍♀️', '💃', '🎧', '🎮', '🧩', '🌍', '🗣️', '💻', '🧹', '🛏️', '💰', '🙏', '💌', '🐈', '🐕', '🌸', '⭐', '🧴', '🍎', '📵', '📝', '🎬', '🧵', '🎤', '♟️', '🌞', '🫖'];
@@ -46,43 +49,43 @@ const STARTERS = [
 
 // Hazır plan: Ceyda'nın "2 Haftalık Ev İşleri Planı" dosyasından.
 // Sürüm numarası artınca listeye yeni eklenenler telefona bir kez yüklenir.
-// start: döngünün 1. günü. startV artınca bu tarih telefona bir kez uygulanır.
-// routines.days: 14 günlük döngünün günleri (1–14). every: 2 ise iki döngüde bir (aylık).
-const ODA = 'Oda döngüsü', PER = 'Periyodik', KUCUK = 'Küçük iş';
+// start: ev işleri rutininin ilk günü. startV artınca bu tarih telefona bir kez uygulanır.
+// routines.days: 14 günlük rutinin günleri (1–14). every: 2 ise ayda bir.
+// routines.color: işin türünü ayırt eden renk. 0 odalar, 1 düzenli işler, 2 ufak işler.
 const PRESET = {
   version: 1,
   start: '2026-11-21',
   startV: 1,
   routines: [
-    { id: 'r-oda-yatak', tag: ODA, size: 'l', days: [1, 7, 13], title: 'Yatak odası + koridor + merdiven', note: 'Süpür, komodinler' },
-    { id: 'r-oda-mutfak', tag: ODA, size: 'l', days: [2, 8, 14], title: 'Mutfak', note: 'Süpür, tezgâh, kahve köşesi, lavabo' },
-    { id: 'r-oda-banyo', tag: ODA, size: 'l', days: [3, 9], title: 'Büyük banyo + alt kat tuvaleti', note: 'Kabin, tuvaletler, ayna, lavabo' },
-    { id: 'r-oda-salon', tag: ODA, size: 'l', days: [4, 10], title: 'Salon + antre + merdiven', note: 'Süpür, sehpa, kumandalar, ayakkabılık' },
-    { id: 'r-oda-hobi', tag: ODA, size: 'l', days: [5, 11], title: 'Hobi odası + ebeveyn banyosu + tırmalamalar', note: 'Süpür, ütü alanı, kabin, tuvalet, ayna, tırmalama ve kedi yatakları' },
+    { id: 'r-oda-yatak', color: 0, size: 'l', days: [1, 7, 13], title: 'Yatak odası + koridor + merdiven', note: 'Süpür, komodinler' },
+    { id: 'r-oda-mutfak', color: 0, size: 'l', days: [2, 8, 14], title: 'Mutfak', note: 'Süpür, tezgâh, kahve köşesi, lavabo' },
+    { id: 'r-oda-banyo', color: 0, size: 'l', days: [3, 9], title: 'Büyük banyo + alt kat tuvaleti', note: 'Kabin, tuvaletler, ayna, lavabo' },
+    { id: 'r-oda-salon', color: 0, size: 'l', days: [4, 10], title: 'Salon + antre + merdiven', note: 'Süpür, sehpa, kumandalar, ayakkabılık' },
+    { id: 'r-oda-hobi', color: 0, size: 'l', days: [5, 11], title: 'Hobi odası + ebeveyn banyosu + tırmalamalar', note: 'Süpür, ütü alanı, kabin, tuvalet, ayna, tırmalama ve kedi yatakları' },
 
-    { id: 'r-kum', tag: PER, size: 'm', days: [1, 3, 5, 7, 9, 11, 13], title: 'Kumu temizle + kedi odasını süpür' },
-    { id: 'r-camasir', tag: PER, size: 'm', days: [2, 5, 8, 11, 14], title: 'Çamaşır', note: 'Yıka, kurut, katla' },
-    { id: 'r-tara', tag: PER, size: 'm', days: [3, 6, 9, 12], title: 'Kedileri tara' },
-    { id: 'r-nevresim', tag: PER, size: 'm', days: [1, 8], title: 'Nevresimi değiştir' },
-    { id: 'r-havlu', tag: PER, size: 'm', days: [1, 8], title: 'Havluları değiştir' },
-    { id: 'r-kap', tag: PER, size: 'm', days: [4, 10], title: 'Mama ve su kaplarını yıka' },
-    { id: 'r-canta', tag: PER, size: 'm', days: [6, 12], title: 'Çantanın içini boşalt' },
-    { id: 'r-gardirop', tag: PER, size: 'm', days: [7, 13], title: 'Gardırobu düzenle' },
-    { id: 'r-kozmetik', tag: PER, size: 'm', days: [12], every: 2, title: 'Tarihi geçmiş kozmetikleri at' },
+    { id: 'r-kum', color: 1, size: 'm', days: [1, 3, 5, 7, 9, 11, 13], title: 'Kumu temizle + kedi odasını süpür' },
+    { id: 'r-camasir', color: 1, size: 'm', days: [2, 5, 8, 11, 14], title: 'Çamaşır', note: 'Yıka, kurut, katla' },
+    { id: 'r-tara', color: 1, size: 'm', days: [3, 6, 9, 12], title: 'Kedileri tara' },
+    { id: 'r-nevresim', color: 1, size: 'm', days: [1, 8], title: 'Nevresimi değiştir' },
+    { id: 'r-havlu', color: 1, size: 'm', days: [1, 8], title: 'Havluları değiştir' },
+    { id: 'r-kap', color: 1, size: 'm', days: [4, 10], title: 'Mama ve su kaplarını yıka' },
+    { id: 'r-canta', color: 1, size: 'm', days: [6, 12], title: 'Çantanın içini boşalt' },
+    { id: 'r-gardirop', color: 1, size: 'm', days: [7, 13], title: 'Gardırobu düzenle' },
+    { id: 'r-kozmetik', color: 1, size: 'm', days: [12], every: 2, title: 'Tarihi geçmiş kozmetikleri at' },
 
-    { id: 'r-k-sunger', tag: KUCUK, size: 's', days: [1], title: 'Bulaşık süngerini değiştir' },
-    { id: 'r-k-baharat', tag: KUCUK, size: 's', days: [2], title: 'Baharatlığı düzenle' },
-    { id: 'r-k-kapi', tag: KUCUK, size: 's', days: [3], title: 'Kapı kollarını ve ışık düğmelerini sil' },
-    { id: 'r-k-salonkitap', tag: KUCUK, size: 's', days: [4], title: 'Salon kitaplığını düzenle' },
-    { id: 'r-k-gider', tag: KUCUK, size: 's', days: [5], title: 'Lavabo giderini temizle' },
-    { id: 'r-k-erzakdolap', tag: KUCUK, size: 's', days: [6], title: 'Büyük erzak dolabını toparla' },
-    { id: 'r-k-buzdolabi', tag: KUCUK, size: 's', days: [7], title: 'Buzdolabındaki eski yiyecekleri at' },
-    { id: 'r-k-erzak', tag: KUCUK, size: 's', days: [8], title: 'Erzak kontrolü + alışveriş listesi' },
-    { id: 'r-k-poset', tag: KUCUK, size: 's', days: [9], title: 'Poşet ve saklama kaplarını ayıkla' },
-    { id: 'r-k-ustdolap', tag: KUCUK, size: 's', days: [10], title: 'Üst dolapları toparla' },
-    { id: 'r-k-hobikitap', tag: KUCUK, size: 's', days: [11], title: 'Hobi odası kitaplığını düzenle' },
-    { id: 'r-k-masa', tag: KUCUK, size: 's', days: [13], title: 'Çalışma masasını düzenle' },
-    { id: 'r-k-altdolap', tag: KUCUK, size: 's', days: [14], title: 'Alt dolapları toparla' },
+    { id: 'r-k-sunger', color: 2, size: 's', days: [1], title: 'Bulaşık süngerini değiştir' },
+    { id: 'r-k-baharat', color: 2, size: 's', days: [2], title: 'Baharatlığı düzenle' },
+    { id: 'r-k-kapi', color: 2, size: 's', days: [3], title: 'Kapı kollarını ve ışık düğmelerini sil' },
+    { id: 'r-k-salonkitap', color: 2, size: 's', days: [4], title: 'Salon kitaplığını düzenle' },
+    { id: 'r-k-gider', color: 2, size: 's', days: [5], title: 'Lavabo giderini temizle' },
+    { id: 'r-k-erzakdolap', color: 2, size: 's', days: [6], title: 'Büyük erzak dolabını toparla' },
+    { id: 'r-k-buzdolabi', color: 2, size: 's', days: [7], title: 'Buzdolabındaki eski yiyecekleri at' },
+    { id: 'r-k-erzak', color: 2, size: 's', days: [8], title: 'Erzak kontrolü + alışveriş listesi' },
+    { id: 'r-k-poset', color: 2, size: 's', days: [9], title: 'Poşet ve saklama kaplarını ayıkla' },
+    { id: 'r-k-ustdolap', color: 2, size: 's', days: [10], title: 'Üst dolapları toparla' },
+    { id: 'r-k-hobikitap', color: 2, size: 's', days: [11], title: 'Hobi odası kitaplığını düzenle' },
+    { id: 'r-k-masa', color: 2, size: 's', days: [13], title: 'Çalışma masasını düzenle' },
+    { id: 'r-k-altdolap', color: 2, size: 's', days: [14], title: 'Alt dolapları toparla' },
   ],
   // Tek seferlik işler: ilk döngünün belirtilen gününe düşer
   todos: [
@@ -150,7 +153,8 @@ function normalize(raw) {
       days = out;
     }
     return {
-      id: String(r.id), title: String(r.title), note: String(r.note || ''), tag: String(r.tag || ''),
+      id: String(r.id), title: String(r.title), note: String(r.note || ''),
+      color: Number.isInteger(r.color) && r.color >= 0 && r.color < ROUTINE_COLORS ? r.color : (OLD_TAG[r.tag] != null ? OLD_TAG[r.tag] : null),
       days: days.filter((n) => n >= 1 && n <= 14), every: r.every === 2 ? 2 : 1, size: SIZE_OK[r.size] ? r.size : 'm',
     };
   });
@@ -299,30 +303,24 @@ const ICON = {
   trash: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 
-/* ================= 14 günlük döngü ================= */
+/* ================= 14 günlük ev işleri rutini ================= */
 // Rutin: iki haftalık döngüde belirli günlerde tekrar eden iş.
 // Her tekrar, o günün görevi olarak listeye düşer; ertelenebilir, öne alınabilir, tamamlanabilir.
 const GEN_AHEAD = 13;
-// Döngü 14 gündür ve sürekli tekrar eder: başlangıç günü Gün 1, 14. günden sonra yine Gün 1.
+// Rutin 14 gün sürer ve bitince baştan başlar: başlangıç günü 1. gün, 14. günden sonra yine 1. gün.
 const CYCLE = 14;
-const cycleDay = (d) => Math.round((d - parse(S.cycleStart)) / 864e5); // eksi ise döngü henüz başlamadı
+const cycleDay = (d) => Math.round((d - parse(S.cycleStart)) / 864e5); // eksi ise rutin henüz başlamadı
 const cycleNo = (d) => { const n = cycleDay(d); return n < 0 ? 0 : (n % CYCLE) + 1; }; // 1–14, başlamadıysa 0
 // İçinde bulunulan (ya da ilk) döngünün 1. günü
 function cycleBase(d) {
   const n = cycleDay(d);
   return n < 0 ? parse(S.cycleStart) : addDays(parse(S.cycleStart), Math.floor(n / CYCLE) * CYCLE);
 }
-function cycleLabel(d) {
-  const c = cycleNo(d);
-  if (c) return `Gün ${c} / ${CYCLE}`;
-  return cycleDay(d) === -1 ? 'döngü yarın başlıyor' : `döngü ${fmtShort(parse(S.cycleStart))} günü başlıyor`;
-}
 function routineOn(r, d) {
   const n = cycleDay(d);
   if (n < 0) return false;
   return r.days.includes((n % CYCLE) + 1) && Math.floor(n / CYCLE) % (r.every || 1) === 0;
 }
-const TAGS = ['Oda döngüsü', 'Periyodik', 'Küçük iş'];
 // Gün sayacı: başlangıç günü 1. gün sayılır, her gün kendiliğinden bir artar
 const counterDay = (c) => Math.round((today() - parse(c.start)) / 864e5) + 1;
 const SINCE = ['tan', 'tan', 'tan', 'dan', 'tan', 'dan', 'dan', 'tan', 'den', 'den', 'dan', 'tan'];
@@ -368,7 +366,7 @@ function applyPreset() {
     const tk = dkey(today());
     const haveR = new Set(S.routines.map((r) => r.id));
     PRESET.routines.forEach((r) => {
-      if (!haveR.has(r.id)) S.routines.push({ id: r.id, title: r.title, note: r.note || '', tag: r.tag || '', days: r.days.slice(), every: r.every === 2 ? 2 : 1, size: r.size || 'm' });
+      if (!haveR.has(r.id)) S.routines.push({ id: r.id, title: r.title, note: r.note || '', color: r.color == null ? null : r.color, days: r.days.slice(), every: r.every === 2 ? 2 : 1, size: r.size || 'm' });
     });
     const haveH = new Set(S.habits.map((h) => h.id)), names = new Set(S.habits.map((h) => h.name.toLocaleLowerCase('tr')));
     PRESET.habits.forEach((h) => {
@@ -496,11 +494,11 @@ function todoRow(td, showDue) {
   else if (showDue && !td.done) chips.push(`<span class="chip">${dueLabel(td)}</span>`);
   const rt = td.rid ? S.routines.find((x) => x.id === td.rid) : null;
   const note = (rt && rt.note) || td.note;
-  if (td.rid) chips.push(`<span class="chip rt">${esc((rt && rt.tag) || 'Rutin')}</span>`);
+  const tint = rt && rt.color != null ? ` tinted c${rt.color}` : '';
   const canL = !td.done, canR = !td.done && td.due !== tk;
   return `<div class="swipe" data-id="${td.id}" data-l="${canL ? 1 : 0}" data-r="${canR ? 1 : 0}">
     <div class="swipe-bg" aria-hidden="true"><span class="sb-r">☀️ Bugüne al</span><span class="sb-l">${td.due && td.due > tk ? 'Bir gün ertele' : 'Yarına ertele'} 🌙</span></div>
-    <div class="todo ${td.done ? 'is-done' : ''} ${ui.flash === td.id ? 'just-done' : ''}">
+    <div class="todo ${td.done ? 'is-done' : ''} ${ui.flash === td.id ? 'just-done' : ''}${tint}">
       <button class="tick" data-act="toggle-todo" data-id="${td.id}" aria-pressed="${td.done}" aria-label="${esc(td.title)}: ${td.done ? 'geri al' : 'tamamla'}"><i>${ICON.check}</i></button>
       <button class="todo-body" data-act="edit-todo" data-id="${td.id}"><span class="todo-title">${esc(td.title)}</span>${note ? `<span class="todo-note">${esc(note)}</span>` : ''}${chips.length ? `<span class="todo-meta">${chips.join('')}</span>` : ''}</button>
     </div>
@@ -588,7 +586,7 @@ function renderToday() {
       const n = keys.reduce((a, x) => a + byDay[x].todos.length + byDay[x].ev.length, 0);
       const daysHtml = ui.showLater ? keys.map((x) => {
         const dd = parse(x);
-        return `<div class="day-head"><b>${DAYS_LONG[mdow(dd)]}</b><span class="num">${fmtShort(dd)}</span>${cycleNo(dd) ? `<span class="chip">Gün ${cycleNo(dd)}</span>` : ''}</div>${eventList(byDay[x].ev, x)}${byDay[x].todos.length ? todoList(byDay[x].todos, false) : ''}`;
+        return `<div class="day-head"><b>${DAYS_LONG[mdow(dd)]}</b><span class="num">${fmtShort(dd)}</span></div>${eventList(byDay[x].ev, x)}${byDay[x].todos.length ? todoList(byDay[x].todos, false) : ''}`;
       }).join('') : '';
       rest += `<section class="section"><div class="sec-head"><h2>Sonraki günler</h2><button class="link-btn" data-act="toggle-later">${ui.showLater ? 'Gizle' : `Göster (${n})`}</button></div>${daysHtml}</section>`;
     }
@@ -602,7 +600,7 @@ function renderToday() {
 
   return `
   <header class="page-head">
-    <div class="grow"><p class="eyebrow">${fmtLong(t)} · ${cycleLabel(t)}</p><h1>${greet}, ${esc(S.name)}</h1></div>
+    <div class="grow"><p class="eyebrow">${fmtLong(t)}</p><h1>${greet}, ${esc(S.name)}</h1></div>
     <button class="btn sm ghost" data-act="view" data-v="setup">Düzenle</button>
   </header>
   <div class="week" role="group" aria-label="Bu hafta">${strip}</div>
@@ -629,8 +627,8 @@ function renderToday() {
 // Düzenleme: bütün alışkanlıklar ve 14 günlük plan
 function renderSetup() {
   const t = today(), plan = ui.setup === 'plan';
-  const head = `<header class="page-head"><div class="grow"><button class="link-btn back" data-act="view" data-v="day">‹ Bugün</button><h1>Düzenle</h1></div><button class="btn sm ghost" data-act="${plan ? 'new-routine' : 'new-habit'}">${plan ? 'Rutin ekle' : 'Alışkanlık ekle'}</button></header>
-  <div class="seg"><button class="${plan ? '' : 'on'}" data-act="setup" data-v="habits" aria-pressed="${!plan}">Alışkanlıklar</button><button class="${plan ? 'on' : ''}" data-act="setup" data-v="plan" aria-pressed="${plan}">14 günlük plan</button></div>`;
+  const head = `<header class="page-head"><div class="grow"><button class="link-btn back" data-act="view" data-v="day">‹ Bugün</button><h1>Düzenle</h1></div><button class="btn sm ghost" data-act="${plan ? 'new-routine' : 'new-habit'}">${plan ? 'İş ekle' : 'Alışkanlık ekle'}</button></header>
+  <div class="seg"><button class="${plan ? '' : 'on'}" data-act="setup" data-v="habits" aria-pressed="${!plan}">Alışkanlıklar</button><button class="${plan ? 'on' : ''}" data-act="setup" data-v="plan" aria-pressed="${plan}">Ev işleri rutini</button></div>`;
   if (plan) return head + renderPlan();
   const card = (h) => {
     let dots = '';
@@ -664,18 +662,18 @@ function renderPlan() {
   let days = '';
   for (let cd = (half - 1) * 7 + 1; cd <= half * 7; cd++) {
     const d = addDays(base, cd - 1);
-    const items = S.routines.filter((r) => r.days.includes(cd)).sort((a, b) => (TAGS.indexOf(a.tag) + 9) % 9 - (TAGS.indexOf(b.tag) + 9) % 9);
+    const items = S.routines.filter((r) => r.days.includes(cd)).sort((a, b) => (a.color == null ? 9 : a.color) - (b.color == null ? 9 : b.color));
     days += `<section class="plan-day ${dkey(d) === dkey(t) ? 'is-today' : ''}">
-      <div class="plan-head"><b>Gün ${cd}</b><span class="muted small num">${DAYS_LONG[mdow(d)]}, ${fmtShort(d)}</span><span class="grow"></span><button class="add-mini" data-act="new-routine" data-d="${cd}" aria-label="Gün ${cd} için rutin ekle">${PLUS}</button></div>
-      ${items.length ? `<div class="todo-list">${items.map((r) => `<button class="plan-item" data-act="edit-routine" data-id="${r.id}"><span class="grow">${esc(r.title)}${r.note ? `<span class="todo-note">${esc(r.note)}</span>` : ''}</span><span class="plan-chips">${r.tag ? `<span class="chip rt">${esc(r.tag)}</span>` : ''}${r.every === 2 ? `<span class="chip">${cyc % 2 === 0 ? 'Aylık' : 'Aylık, bu döngüde yok'}</span>` : ''}</span></button>`).join('')}</div>` : '<p class="plan-empty">Boş gün</p>'}
+      <div class="plan-head"><b>${DAYS_LONG[mdow(d)]}, ${fmtShort(d)}</b><span class="muted small num">${cd}. gün</span><span class="grow"></span><button class="add-mini" data-act="new-routine" data-d="${cd}" aria-label="${cd}. güne iş ekle">${PLUS}</button></div>
+      ${items.length ? `<div class="todo-list">${items.map((r) => `<button class="plan-item${r.color != null ? ` tinted c${r.color}` : ''}" data-act="edit-routine" data-id="${r.id}"><span class="grow">${esc(r.title)}${r.note ? `<span class="todo-note">${esc(r.note)}</span>` : ''}</span>${r.every === 2 ? `<span class="chip">${cyc % 2 === 0 ? 'Ayda bir' : 'Ayda bir, bu sefer yok'}</span>` : ''}</button>`).join('')}</div>` : '<p class="plan-empty">Boş gün</p>'}
     </section>`;
   }
-  const status = c ? `Bugün Gün ${c} / ${CYCLE}` : cycleDay(t) === -1 ? 'Gün 1 yarın' : `Gün 1: ${fmtLong(base)}`;
+  const status = c ? `Bugün rutinin ${c}. günü` : cycleDay(t) === -1 ? 'Ev işleri rutini yarın başlıyor' : `Ev işleri rutini ${fmtLong(base)} günü başlıyor`;
   return `<div class="card pad stack">
-    <div><b>${status}</b><span class="hint" style="display:block">14 günlük döngü sürekli tekrar eder: 14. günden sonra yine Gün 1 gelir. Her günün işleri o günün görevlerine kendiliğinden eklenir.</span></div>
-    <div class="setting"><label for="cycleDate">Gün 1 tarihi</label><input class="field" type="date" id="cycleDate" value="${esc(S.cycleStart)}"></div>
+    <div><b>${status}</b><span class="hint" style="display:block">Rutin 14 gün sürer, bitince baştan başlar. Her günün işleri o günün görevlerine kendiliğinden eklenir.</span></div>
+    <div class="setting"><label for="cycleDate">Rutinin ilk günü</label><input class="field" type="date" id="cycleDate" value="${esc(S.cycleStart)}"></div>
   </div>
-  <div class="seg">${[1, 2].map((x) => `<button class="${half === x ? 'on' : ''}" data-act="plan-week" data-v="${x}" aria-pressed="${half === x}">Gün ${x === 1 ? '1–7' : '8–14'} · ${span(addDays(base, (x - 1) * 7))}</button>`).join('')}</div>
+  <div class="seg">${[1, 2].map((x) => `<button class="${half === x ? 'on' : ''}" data-act="plan-week" data-v="${x}" aria-pressed="${half === x}">${x === 1 ? 'İlk hafta' : 'İkinci hafta'} · ${span(addDays(base, (x - 1) * 7))}</button>`).join('')}</div>
   ${days}`;
 }
 
@@ -701,7 +699,7 @@ function renderCal() {
 
   const ev = eventsOn(sel), todos = S.todos.filter((x) => x.due === sel).sort((a, b) => a.done - b.done), proj = projected(sd);
   const habits = S.habits.filter((h) => showsOn(h, sd));
-  const projHtml = proj.length ? `<div class="todo-list">${proj.map((r) => `<div class="todo proj"><span class="tick"><i></i></span><span class="todo-body"><span class="todo-title">${esc(r.title)}</span>${r.note ? `<span class="todo-note">${esc(r.note)}</span>` : ''}<span class="todo-meta">${r.tag ? `<span class="chip rt">${esc(r.tag)}</span>` : ''}<span class="chip">Günü gelince listeye düşer</span></span></span></div>`).join('')}</div>` : '';
+  const projHtml = proj.length ? `<div class="todo-list">${proj.map((r) => `<div class="todo proj${r.color != null ? ` tinted c${r.color}` : ''}"><span class="tick"><i></i></span><span class="todo-body"><span class="todo-title">${esc(r.title)}</span>${r.note ? `<span class="todo-note">${esc(r.note)}</span>` : ''}<span class="todo-meta"><span class="chip">Günü gelince listeye düşer</span></span></span></div>`).join('')}</div>` : '';
   const habitChips = habits.length
     ? `<div class="hchips">${habits.map((h) => `<span class="hchip ${sd <= t && isDone(h, sel) ? 'on' : ''}">${h.emoji} ${esc(h.name)}</span>`).join('')}</div>`
     : '<p class="hint">Bu gün için planlı alışkanlık yok.</p>';
@@ -715,7 +713,7 @@ function renderCal() {
     <div class="cal">${cells}</div>
     <div class="cal-legend"><span><i class="m-sp"></i>Özel gün</span><span><i class="m-pl"></i>Plan</span><span><i class="m-task"></i>Görev</span>${ui.calOff !== 0 || sel !== tk ? '<button class="link-btn" data-act="cal-today">Bugüne dön</button>' : ''}</div>
   </section>
-  <div class="row" style="justify-content:space-between;padding:0 2px"><h2 class="cal-title">${fmtLong(sd)}${sd.getFullYear() !== t.getFullYear() ? ' ' + sd.getFullYear() : ''}</h2>${cycleNo(sd) ? `<span class="chip">Gün ${cycleNo(sd)} / ${CYCLE}</span>` : ''}</div>
+  <div class="row" style="justify-content:space-between;padding:0 2px"><h2 class="cal-title">${fmtLong(sd)}${sd.getFullYear() !== t.getFullYear() ? ' ' + sd.getFullYear() : ''}</h2></div>
   <section class="section">
     <div class="sec-head"><h2>Özel günler ve planlar</h2><button class="add-mini" data-act="new-event" data-k="${sel}" aria-label="Bu güne özel gün ya da plan ekle">${PLUS}</button></div>
     ${ev.length ? eventList(ev, sel) : '<div class="empty dashed"><p>Bu güne eklenmiş bir şey yok. Doğum günü, randevu, misafir, gezi gibi şeyleri buraya ekleyebilirsin.</p></div>'}
@@ -1007,23 +1005,23 @@ function saveTodo() {
 function openRoutineForm(id, cday) {
   const r = id ? S.routines.find((x) => x.id === id) : null;
   draft = r
-    ? { form: 'routine', id: r.id, title: r.title, note: r.note || '', days: [...r.days], size: r.size, every: r.every || 1, tag: r.tag || '' }
-    : { form: 'routine', id: null, title: '', note: '', days: cday ? [cday] : [], size: 'm', every: 1, tag: '' };
+    ? { form: 'routine', id: r.id, title: r.title, note: r.note || '', days: [...r.days], size: r.size, every: r.every || 1, color: r.color }
+    : { form: 'routine', id: null, title: '', note: '', days: cday ? [cday] : [], size: 'm', every: 1, color: null };
   drawRoutineForm();
   if (!r) setTimeout(() => { const el = $('#rfTitle'); if (el) el.focus(); }, 320);
 }
 function drawRoutineForm() {
   const d = draft, editing = !!d.id, base = cycleBase(today());
   const pick = (v, cur, act, tx) => `<button class="${cur === v ? 'on' : ''}" data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${tx}</button>`;
-  setSheet(`${sheetHead(editing ? 'Rutini düzenle' : 'Yeni rutin')}
+  setSheet(`${sheetHead(editing ? 'İşi düzenle' : 'Rutine iş ekle')}
   <div class="sheet-body">
     <div class="setting"><label for="rfTitle">Ne yapılacak?</label><input class="field" id="rfTitle" data-bind="title" value="${esc(d.title)}" placeholder="Örn. Nevresimi değiştir" maxlength="120" autocomplete="off" enterkeyhint="done"></div>
     <div class="setting"><label for="rfNote">Not</label><input class="field" id="rfNote" data-bind="note" value="${esc(d.note)}" placeholder="İsteğe bağlı. Örn. süpür, ayna, lavabo" maxlength="160" autocomplete="off"></div>
-    <div class="setting"><span class="lab2">Döngünün hangi günleri?</span>
-      <div class="cdaypick">${Array.from({ length: CYCLE }, (_, i) => `<button class="${d.days.includes(i + 1) ? 'on' : ''}" data-act="rf-day" data-v="${i + 1}" aria-pressed="${d.days.includes(i + 1)}" aria-label="Gün ${i + 1}, ${DAYS_LONG[mdow(addDays(base, i))]}"><b>${i + 1}</b><small>${DAYS[mdow(addDays(base, i))]}</small></button>`).join('')}</div></div>
-    <div class="setting"><span class="lab2">Ne sıklıkla?</span><div class="seg">${pick(1, d.every, 'rf-every', 'Her döngüde')}${pick(2, d.every, 'rf-every', 'İki döngüde bir (aylık)')}</div></div>
-    <div class="setting"><span class="lab2">Tür</span><div class="seg wrap">${TAGS.map((x) => pick(x, d.tag, 'rf-tag', x)).join('')}</div></div>
-    <p class="hint">Rutin, seçtiğin günlerde görev olarak listene düşer. O günkü görevi erteleyebilir ya da öne alabilirsin; plan değişmez.</p>
+    <div class="setting"><span class="lab2">Rutinin hangi günleri?</span>
+      <div class="cdaypick">${Array.from({ length: CYCLE }, (_, i) => `<button class="${d.days.includes(i + 1) ? 'on' : ''}" data-act="rf-day" data-v="${i + 1}" aria-pressed="${d.days.includes(i + 1)}" aria-label="${i + 1}. gün, ${DAYS_LONG[mdow(addDays(base, i))]}"><b>${i + 1}</b><small>${DAYS[mdow(addDays(base, i))]}</small></button>`).join('')}</div></div>
+    <div class="setting"><span class="lab2">Ne sıklıkla?</span><div class="seg">${pick(1, d.every, 'rf-every', '14 günde bir')}${pick(2, d.every, 'rf-every', 'Ayda bir')}</div></div>
+    <div class="setting"><span class="lab2">Renk</span><div class="swatches">${Array.from({ length: ROUTINE_COLORS }, (_, i) => `<button class="swatch tinted c${i} ${d.color === i ? 'on' : ''}" data-act="rf-color" data-v="${i}" aria-label="Renk ${i + 1}" aria-pressed="${d.color === i}"></button>`).join('')}</div><p class="hint">Aynı türden işlere aynı rengi verirsen listede bir bakışta ayırt edersin. Rengi kaldırmak için seçili renge yeniden dokun.</p></div>
+    <p class="hint">İş, seçtiğin günlerde görev olarak listene düşer. O günkü görevi erteleyebilir ya da öne alabilirsin; rutin değişmez.</p>
   </div>
   <div class="sheet-foot">${editing ? `<button class="btn danger" data-act="rf-delete" aria-label="Sil">${ICON.trash}</button>` : ''}<button class="btn" data-act="rf-save">${editing ? 'Kaydet' : 'Ekle'}</button></div>`);
 }
@@ -1031,7 +1029,7 @@ function saveRoutine() {
   const d = draft, title = d.title.trim();
   if (!title) { shake('#rfTitle'); return; }
   if (!d.days.length) { toast('📅', 'En az bir gün seç'); return; }
-  const fields = { title, note: d.note.trim(), days: [...d.days].sort((a, b) => a - b), size: d.size, every: d.every === 2 ? 2 : 1, tag: d.tag };
+  const fields = { title, note: d.note.trim(), days: [...d.days].sort((a, b) => a - b), size: d.size, every: d.every === 2 ? 2 : 1, color: d.color };
   let id = d.id;
   if (id) {
     Object.assign(S.routines.find((x) => x.id === id), fields);
@@ -1118,7 +1116,7 @@ function drawOnboarding() {
   if (S.habits.length || S.routines.length) {
     setSheet(`${sheetHead(`Hoş geldin, ${esc(S.name)}`)}
     <div class="sheet-body">
-      <p class="muted">Planın yüklendi: ${S.habits.length} alışkanlık ve 14 günlük döngüde ${S.routines.length} ev işi. ${cycleNo(today()) ? '' : 'Döngü ' + (cycleDay(today()) === -1 ? 'yarın' : fmtShort(parse(S.cycleStart)) + ' günü') + ' Gün 1 ile başlıyor.'}</p>
+      <p class="muted">Planın yüklendi: ${S.habits.length} alışkanlık ve ${S.routines.length} işlik ev işleri rutini. ${cycleNo(today()) ? '' : 'Ev işleri rutini ' + (cycleDay(today()) === -1 ? 'yarın' : fmtShort(parse(S.cycleStart)) + ' günü') + ' başlıyor.'}</p>
       <p class="muted">Her günün ev işleri o günün görevlerine kendiliğinden eklenir. Bir görevi ertelemek için sola, bugüne almak için sağa kaydır.</p>
       <p class="muted">Doğum günü, randevu gibi özel günleri ve ek planları Takvim sekmesinden ekleyebilirsin.</p>
     </div>
@@ -1235,13 +1233,13 @@ const ACT = {
   'edit-routine': (el) => openRoutineForm(el.dataset.id),
   'rf-day': (el) => { const i = +el.dataset.v, at = draft.days.indexOf(i); if (at >= 0) draft.days.splice(at, 1); else draft.days.push(i); drawRoutineForm(); },
   'rf-every': (el) => { draft.every = +el.dataset.v; drawRoutineForm(); },
-  'rf-tag': (el) => { draft.tag = draft.tag === el.dataset.v ? '' : el.dataset.v; drawRoutineForm(); },
+  'rf-color': (el) => { const v = +el.dataset.v; draft.color = draft.color === v ? null : v; drawRoutineForm(); },
   'rf-save': () => saveRoutine(),
   'rf-delete': () => {
     const r = S.routines.find((x) => x.id === draft.id); if (!r) return;
     confirmSheet({
-      title: 'Rutin silinsin mi?', text: `"${esc(r.title)}" plandan çıkar ve bekleyen görevleri silinir. Tamamladıkların kalır.`, yes: 'Sil', danger: true,
-      onYes: () => { S.todos = S.todos.filter((x) => !(x.rid === r.id && !x.done)); S.routines = S.routines.filter((x) => x.id !== r.id); after(); toast('🍂', 'Rutin silindi', r.title); },
+      title: 'Silinsin mi?', text: `"${esc(r.title)}" rutinden çıkar ve bekleyen görevleri silinir. Tamamladıkların kalır.`, yes: 'Sil', danger: true,
+      onYes: () => { S.todos = S.todos.filter((x) => !(x.rid === r.id && !x.done)); S.routines = S.routines.filter((x) => x.id !== r.id); after(); toast('🍂', 'Rutinden çıkarıldı', r.title); },
     });
   },
 
@@ -1381,7 +1379,7 @@ document.addEventListener('change', (e) => {
     S.cycleStart = v;
     rebuildAllRoutines(); syncRoutines(); ui.planWeek = null;
     after();
-    toast('🔁', 'Gün 1 değişti', `Döngü ${fmtLong(parse(v))} gününden sayılıyor`);
+    toast('🔁', 'Rutinin ilk günü değişti', `${fmtLong(parse(v))} gününden başlıyor`);
     return;
   }
   if (e.target.id === 'setName') {
