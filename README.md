@@ -2,7 +2,7 @@
 
 Alışkanlıklar, görevler, 14 günde bir tekrar eden ev işleri rutini ve takvim için telefona uygun, sade bir web uygulaması.
 
-- **Bugün:** tek ekranda günün görevleri, alışkanlıkları, yarın ve sonraki günler. Görev satırı sola kaydırılınca bir gün ertelenir, sağa kaydırılınca bugüne alınır. "Düzenle" ile bütün alışkanlıklar ve ev işleri rutini yönetilir
+- **Bugün:** tek ekranda Ev, Görevler ve Alışkanlıklar, ardından yarın ve sonraki günler. Ev bölümü günün ev işlerini ve her günkü ev işlerini tek listede toplar. Bir ev işine dokununca işin kendisi düzenlenir; değişiklik bekleyen ve sonraki bütün tekrarlara uygulanır. Görev satırı sola kaydırılınca bir gün ertelenir, sağa kaydırılınca bugüne alınır
 - **Ev işleri rutini:** 14 gün sürer, bitince baştan başlar. Her günün işleri o günün görevi olarak listeye düşer; bazı işler ayda bir gelir. İşin türü renkle ayırt edilir
 - **Takvim:** ay görünümü. Özel günler (istenirse her yıl tekrar eden) ve ek planlar eklenir; seçilen günün görevleri ve alışkanlıkları görünür
 - **Analiz:** haftalık ve aylık tamamlama, takvim ısı haritası, alışkanlık karnesi

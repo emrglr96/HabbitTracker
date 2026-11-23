@@ -108,11 +108,11 @@ const PRESET = {
     { id: 'p-emre', group: 'Spor', emoji: '💪', color: 1, name: 'Emre ile ağırlık', days: [5] },
     { id: 'p-sacmaske', group: 'Saç', emoji: '💆‍♀️', color: 4, name: 'Saç maskesi', days: [2], note: 'Duşta' },
     { id: 'p-yagmaske', group: 'Saç', emoji: '💆‍♀️', color: 2, name: 'Yağ maskesi', days: [6] },
-    { id: 'e-mama', group: 'Ev, her gün', emoji: '🐈', color: 7, name: 'Mama ve su kontrolü' },
-    { id: 'e-yatak', group: 'Ev, her gün', emoji: '🛏️', color: 5, name: 'Yatağı topla' },
-    { id: 'e-yastik', group: 'Ev, her gün', emoji: '🛋️', color: 2, name: 'Yastıkları düzelt, battaniyeyi katla' },
-    { id: 'e-bulasik', group: 'Ev, her gün', emoji: '🍽️', color: 1, name: 'Bulaşık' },
-    { id: 'e-cop', group: 'Ev, her gün', emoji: '🗑️', color: 0, name: 'Çöpü çıkar' },
+    { id: 'e-mama', group: 'Ev', emoji: '🐈', color: 7, name: 'Mama ve su kontrolü' },
+    { id: 'e-yatak', group: 'Ev', emoji: '🛏️', color: 5, name: 'Yatağı topla' },
+    { id: 'e-yastik', group: 'Ev', emoji: '🛋️', color: 2, name: 'Yastıkları düzelt, battaniyeyi katla' },
+    { id: 'e-bulasik', group: 'Ev', emoji: '🍽️', color: 1, name: 'Bulaşık' },
+    { id: 'e-cop', group: 'Ev', emoji: '🗑️', color: 0, name: 'Çöpü çıkar' },
   ],
   // Sayaçlar. Tarihli olan başlangıç gününden bugüne kaçıncı gün olduğunu sayar.
   // kind 'tally' olan bir alışkanlığa bağlıdır: base, baseDate gününden önceki sayıdır;
@@ -137,7 +137,7 @@ function normalize(raw) {
       times: clamp((h.freq && h.freq.times) | 0 || 3, 1, 6),
     },
     target: clamp(h.target | 0 || 1, 1, 99), unit: String(h.unit || ''),
-    note: String(h.note || ''), group: String(h.group || ''),
+    note: String(h.note || ''), group: String(h.group || '') === 'Ev, her gün' ? 'Ev' : String(h.group || ''),
     createdAt: /^\d{4}-\d{2}-\d{2}$/.test(h.createdAt) ? h.createdAt : dkey(today()),
     log: h.log && typeof h.log === 'object' ? h.log : {},
   }));
@@ -145,6 +145,7 @@ function normalize(raw) {
     id: String(t.id), title: String(t.title), due: t.due || null, size: SIZE_OK[t.size] ? t.size : 'm',
     done: !!t.done, doneAt: t.done ? (t.doneAt || dkey(today())) : null, createdAt: t.createdAt || dkey(today()),
     rid: t.rid ? String(t.rid) : null, occ: t.occ || null, note: String(t.note || ''),
+    home: !!t.home || String(t.id).indexOf('once-') === 0,
   }));
   s.cycleStart = /^\d{4}-\d{2}-\d{2}$/.test(s.cycleStart) ? s.cycleStart : PRESET.start;
   s.startV = s.startV | 0;
@@ -426,6 +427,10 @@ function groupHabits(list) {
   return out;
 }
 
+// "Ev" bölümü: ev işleri rutininden gelen işler, ev olarak işaretlenen görevler ve grubu "Ev" olan alışkanlıklar
+const isHomeHabit = (h) => h.group.trim().toLocaleLowerCase('tr') === 'ev';
+const isHomeTask = (x) => !!x.rid || !!x.home;
+
 /* ================= küçük etkiler ================= */
 function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { /* desteklenmiyor */ } }
 
@@ -513,6 +518,18 @@ function habitGroups(list, d) {
   return groupHabits(list).map(([title, arr]) => (heads ? `<p class="group-head"><span>${esc(title)}</span><span class="num">${arr.filter((h) => isDone(h, k)).length}/${arr.length}</span></p>` : '') + arr.map((h) => habitCard(h, d)).join('')).join('');
 }
 
+function habitRow(h, d) {
+  const k = dkey(d), c = cnt(h, k), done = c >= h.target;
+  const chips = [`<span class="chip">${freqLabel(h)}</span>`];
+  if (h.target > 1) chips.push(`<span class="chip num">${c}/${h.target}${h.unit ? ' ' + esc(h.unit) : ''}</span>`);
+  return `<div class="swipe" data-l="0" data-r="0">
+    <div class="todo tinted c3 ${done ? 'is-done' : ''} ${ui.flash === h.id ? 'just-done' : ''}">
+      <button class="tick" data-act="${h.target > 1 ? 'inc' : 'toggle'}" data-id="${h.id}" aria-pressed="${done}" aria-label="${esc(h.name)}: ${done ? 'geri al' : 'tamamla'}"><i>${ICON.check}</i></button>
+      <button class="todo-body" data-act="edit-habit" data-id="${h.id}" aria-label="${esc(h.name)}: düzenle"><span class="todo-title">${h.emoji} ${esc(h.name)}</span>${h.note ? `<span class="todo-note">${esc(h.note)}</span>` : ''}<span class="todo-meta">${chips.join('')}</span></button>
+    </div>
+  </div>`;
+}
+
 function todoRow(td, showDue) {
   const tk = dkey(today());
   const chips = [];
@@ -588,12 +605,20 @@ function renderToday() {
   const ev = eventsOn(k);
   const evHtml = ev.length ? `<section class="section"><div class="sec-head"><h2>${isT ? 'Bugün takvimde' : 'O gün takvimde'}</h2></div>${eventList(ev, k)}</section>` : '';
 
-  const tasksHtml = tasks.length ? todoList(tasks, false)
-    : `<div class="empty dashed"><p>${isT ? 'Bugün için görev yok. Aklına geleni yukarıya yaz.' : 'Bu gün için görev yoktu.'}</p></div>`;
+  // Ev: günün ev işleri ve her günkü ev alışkanlıkları tek listede
+  const homeTasks = tasks.filter(isHomeTask), otherTasks = tasks.filter((x) => !isHomeTask(x));
+  const homeHabits = habits.filter(isHomeHabit), otherHabits = habits.filter((h) => !isHomeHabit(h));
+  const homeTotal = homeTasks.length + homeHabits.length;
+  const homeDone = homeTasks.filter((x) => x.done).length + homeHabits.filter((h) => isDone(h, k)).length;
+  const homeHtml = homeTotal
+    ? `<div class="todo-list">${homeTasks.filter((x) => !x.done).map((x) => todoRow(x, false)).join('')}${homeHabits.map((h) => habitRow(h, d)).join('')}${homeTasks.filter((x) => x.done).map((x) => todoRow(x, false)).join('')}</div>`
+    : `<div class="empty dashed"><p>${isT ? 'Bugün için ev işi yok.' : 'Bu gün için ev işi yoktu.'}</p></div>`;
+  const tasksHtml = otherTasks.length ? todoList(otherTasks, false) : '';
+  const otherDoneT = otherTasks.filter((x) => x.done).length, otherDoneH = otherHabits.filter((h) => isDone(h, k)).length;
   let habitsHtml;
   if (!S.habits.length) habitsHtml = `<div class="empty dashed"><h3>Henüz alışkanlık yok</h3><p>Her gün ya da belirli günlerde tekrar eden şeyleri buraya ekle.</p><button class="btn sm" data-act="new-habit">Alışkanlık ekle</button></div>`;
-  else if (!habits.length) habitsHtml = `<div class="empty dashed"><p>${isT ? 'Bugün için planlı alışkanlık yok.' : 'Bu gün için planlı alışkanlık yoktu.'}</p></div>`;
-  else habitsHtml = habitGroups(habits, d);
+  else if (!otherHabits.length) habitsHtml = `<div class="empty dashed"><p>${isT ? 'Bugün için planlı alışkanlık yok.' : 'Bu gün için planlı alışkanlık yoktu.'}</p></div>`;
+  else habitsHtml = habitGroups(otherHabits, d);
 
   let rest = '';
   if (isT) {
@@ -641,13 +666,17 @@ function renderToday() {
   ${isT ? countersRow() : ''}
   ${evHtml}
   <section class="section">
-    <div class="sec-head"><h2>Görevler</h2><span class="row">${tasks.length ? `<span class="count num">${doneT}/${tasks.length}</span>` : ''}${isT ? `<button class="add-mini" data-act="new-todo" aria-label="Tarihli görev ekle">${PLUS}</button>` : ''}</span></div>
+    <div class="sec-head"><h2>Ev</h2><span class="row">${homeTotal ? `<span class="count num">${homeDone}/${homeTotal}</span>` : ''}${isT ? `<button class="add-mini" data-act="new-todo" data-home="1" aria-label="Ev işi ekle">${PLUS}</button>` : ''}</span></div>
+    ${homeHtml}
+    ${homeTasks.some((x) => !x.done) ? '<p class="hint swipe-hint">Düzenlemek için işe dokun. Sola kaydır: ertele. Sağa kaydır: bugüne al.</p>' : ''}
+  </section>
+  ${isT || otherTasks.length ? `<section class="section">
+    <div class="sec-head"><h2>Görevler</h2><span class="row">${otherTasks.length ? `<span class="count num">${otherDoneT}/${otherTasks.length}</span>` : ''}${isT ? `<button class="add-mini" data-act="new-todo" aria-label="Tarihli görev ekle">${PLUS}</button>` : ''}</span></div>
     ${isT ? quickForm('quickToday') : ''}
     ${tasksHtml}
-    ${isT && tasks.some((x) => !x.done) ? SWIPE_HINT : ''}
-  </section>
+  </section>` : ''}
   <section class="section">
-    <div class="sec-head"><h2>Alışkanlıklar</h2><span class="row">${habits.length ? `<span class="count num">${doneH}/${habits.length}</span>` : ''}<button class="add-mini" data-act="new-habit" aria-label="Alışkanlık ekle">${PLUS}</button></span></div>
+    <div class="sec-head"><h2>Alışkanlıklar</h2><span class="row">${otherHabits.length ? `<span class="count num">${otherDoneH}/${otherHabits.length}</span>` : ''}<button class="add-mini" data-act="new-habit" aria-label="Alışkanlık ekle">${PLUS}</button></span></div>
     ${habitsHtml}
   </section>
   ${rest}`;
@@ -1003,21 +1032,24 @@ function saveHabit() {
 }
 
 /* ---- görev formu ---- */
-function openTodoForm(id, dateKey) {
+function openTodoForm(id, dateKey, home) {
   const td = id ? findT(id) : null, tk = dkey(today()), tmk = dkey(addDays(today(), 1));
   draft = td
-    ? { form: 'todo', id: td.id, title: td.title, dueMode: !td.due ? 'none' : td.due === tk ? 'today' : td.due === tmk ? 'tomorrow' : 'date', date: td.due || tk, size: td.size }
-    : { form: 'todo', id: null, title: '', dueMode: !dateKey || dateKey === tk ? 'today' : dateKey === tmk ? 'tomorrow' : 'date', date: dateKey || tk, size: 'm' };
+    ? { form: 'todo', id: td.id, title: td.title, note: td.note || '', dueMode: !td.due ? 'none' : td.due === tk ? 'today' : td.due === tmk ? 'tomorrow' : 'date', date: td.due || tk, size: td.size, home: td.home ? '1' : '0' }
+    : { form: 'todo', id: null, title: '', note: '', dueMode: !dateKey || dateKey === tk ? 'today' : dateKey === tmk ? 'tomorrow' : 'date', date: dateKey || tk, size: 'm', home: home ? '1' : '0' };
   drawTodoForm();
   if (!td) setTimeout(() => { const el = $('#tfTitle'); if (el) el.focus(); }, 320);
 }
 function drawTodoForm() {
   const d = draft, editing = !!d.id;
-  setSheet(`${sheetHead(editing ? 'Görevi düzenle' : 'Yeni görev')}
+  setSheet(`${sheetHead(editing ? 'Görevi düzenle' : d.home === '1' ? 'Yeni ev işi' : 'Yeni görev')}
   <div class="sheet-body">
-    <div class="setting"><label for="tfTitle">Ne yapılacak?</label><input class="field" id="tfTitle" data-bind="title" value="${esc(d.title)}" placeholder="Örn. Faturayı öde" maxlength="120" autocomplete="off" enterkeyhint="done"></div>
+    <div class="setting"><label for="tfTitle">Ne yapılacak?</label><input class="field" id="tfTitle" data-bind="title" value="${esc(d.title)}" placeholder="${d.home === '1' ? 'Örn. Camları sil' : 'Örn. Faturayı öde'}" maxlength="120" autocomplete="off" enterkeyhint="done"></div>
+    <div class="setting"><label for="tfNote">Not</label><input class="field" id="tfNote" data-bind="note" value="${esc(d.note)}" placeholder="İsteğe bağlı" maxlength="160" autocomplete="off"></div>
     <div class="setting"><span class="lab2">Ne zaman?</span><div class="seg wrap">${segBtn('tf-set', 'dueMode', 'today', d.dueMode, 'Bugün')}${segBtn('tf-set', 'dueMode', 'tomorrow', d.dueMode, 'Yarın')}${segBtn('tf-set', 'dueMode', 'date', d.dueMode, 'Tarih seç')}${segBtn('tf-set', 'dueMode', 'none', d.dueMode, 'Tarihsiz')}</div>
       ${d.dueMode === 'date' ? `<input class="field" type="date" id="tfDate" data-bind="date" value="${esc(d.date)}" aria-label="Tarih">` : ''}</div>
+    <div class="setting"><span class="lab2">Nerede dursun?</span><div class="seg">${segBtn('tf-set', 'home', '1', d.home, 'Ev')}${segBtn('tf-set', 'home', '0', d.home, 'Görevler')}</div>
+      <p class="hint">Bu bir kez yapılacak bir iş. Tekrar eden ev işlerini Düzenle bölümündeki ev işleri rutinine ekleyebilirsin.</p></div>
   </div>
   <div class="sheet-foot">${editing ? `<button class="btn danger" data-act="tf-delete" aria-label="Sil">${ICON.trash}</button>` : ''}<button class="btn" data-act="tf-save">${editing ? 'Kaydet' : 'Ekle'}</button></div>`);
 }
@@ -1026,25 +1058,28 @@ function saveTodo() {
   if (!title) { shake('#tfTitle'); return; }
   const t = today();
   const due = d.dueMode === 'none' ? null : d.dueMode === 'today' ? dkey(t) : d.dueMode === 'tomorrow' ? dkey(addDays(t, 1)) : (/^\d{4}-\d{2}-\d{2}$/.test(d.date) ? d.date : dkey(t));
-  if (d.id) Object.assign(findT(d.id), { title, due, size: d.size });
-  else S.todos.push({ id: uid(), title, due, size: d.size, done: false, doneAt: null, createdAt: dkey(t) });
+  const fields = { title, note: d.note.trim(), due, size: d.size, home: d.home === '1' };
+  if (d.id) Object.assign(findT(d.id), fields);
+  else S.todos.push(Object.assign({ id: uid(), done: false, doneAt: null, createdAt: dkey(t), rid: null, occ: null }, fields));
   closeSheet();
   after();
 }
 
 /* ---- rutin formu ---- */
-function openRoutineForm(id, cday) {
+// occId: form listedeki bir işe dokunularak açıldıysa o günkü görev
+function openRoutineForm(id, cday, occId) {
   const r = id ? S.routines.find((x) => x.id === id) : null;
   draft = r
-    ? { form: 'routine', id: r.id, title: r.title, note: r.note || '', days: [...r.days], size: r.size, every: r.every || 1, color: r.color }
-    : { form: 'routine', id: null, title: '', note: '', days: cday ? [cday] : [], size: 'm', every: 1, color: null };
+    ? { form: 'routine', id: r.id, title: r.title, note: r.note || '', days: [...r.days], size: r.size, every: r.every || 1, color: r.color, occId: occId || null }
+    : { form: 'routine', id: null, title: '', note: '', days: cday ? [cday] : [], size: 'm', every: 1, color: null, occId: null };
   drawRoutineForm();
   if (!r) setTimeout(() => { const el = $('#rfTitle'); if (el) el.focus(); }, 320);
 }
 function drawRoutineForm() {
   const d = draft, editing = !!d.id, base = cycleBase(today());
+  const occ = d.occId ? findT(d.occId) : null;
   const pick = (v, cur, act, tx) => `<button class="${cur === v ? 'on' : ''}" data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${tx}</button>`;
-  setSheet(`${sheetHead(editing ? 'İşi düzenle' : 'Rutine iş ekle')}
+  setSheet(`${sheetHead(editing ? 'Ev işini düzenle' : 'Rutine iş ekle')}
   <div class="sheet-body">
     <div class="setting"><label for="rfTitle">Ne yapılacak?</label><input class="field" id="rfTitle" data-bind="title" value="${esc(d.title)}" placeholder="Örn. Nevresimi değiştir" maxlength="120" autocomplete="off" enterkeyhint="done"></div>
     <div class="setting"><label for="rfNote">Not</label><input class="field" id="rfNote" data-bind="note" value="${esc(d.note)}" placeholder="İsteğe bağlı. Örn. süpür, ayna, lavabo" maxlength="160" autocomplete="off"></div>
@@ -1052,7 +1087,8 @@ function drawRoutineForm() {
       <div class="cdaypick">${Array.from({ length: CYCLE }, (_, i) => `<button class="${d.days.includes(i + 1) ? 'on' : ''}" data-act="rf-day" data-v="${i + 1}" aria-pressed="${d.days.includes(i + 1)}" aria-label="${i + 1}. gün, ${DAYS_LONG[mdow(addDays(base, i))]}"><b>${i + 1}</b><small>${DAYS[mdow(addDays(base, i))]}</small></button>`).join('')}</div></div>
     <div class="setting"><span class="lab2">Ne sıklıkla?</span><div class="seg">${pick(1, d.every, 'rf-every', '14 günde bir')}${pick(2, d.every, 'rf-every', 'Ayda bir')}</div></div>
     <div class="setting"><span class="lab2">Renk</span><div class="swatches">${Array.from({ length: ROUTINE_COLORS }, (_, i) => `<button class="swatch tinted c${i} ${d.color === i ? 'on' : ''}" data-act="rf-color" data-v="${i}" aria-label="Renk ${i + 1}" aria-pressed="${d.color === i}"></button>`).join('')}</div><p class="hint">Aynı türden işlere aynı rengi verirsen listede bir bakışta ayırt edersin. Rengi kaldırmak için seçili renge yeniden dokun.</p></div>
-    <p class="hint">İş, seçtiğin günlerde görev olarak listene düşer. O günkü görevi erteleyebilir ya da öne alabilirsin; rutin değişmez.</p>
+    ${occ && !occ.done ? `<div class="setting"><span class="lab2">Yalnızca bu seferlik</span><button class="btn ghost sm" data-act="rf-skip">Bu seferlik atla</button><p class="hint">Bu günkü işi listeden çıkarır; sonraki tekrarlar gelmeye devam eder. Ertelemek için işi listede sola kaydır.</p></div>` : ''}
+    <p class="hint">${editing ? 'Ad, not ve renk değişikliği bekleyen ve bundan sonraki bütün tekrarlara uygulanır.' : 'İş, seçtiğin günlerde Ev bölümüne düşer.'}</p>
   </div>
   <div class="sheet-foot">${editing ? `<button class="btn danger" data-act="rf-delete" aria-label="Sil">${ICON.trash}</button>` : ''}<button class="btn" data-act="rf-save">${editing ? 'Kaydet' : 'Ekle'}</button></div>`);
 }
@@ -1061,13 +1097,15 @@ function saveRoutine() {
   if (!title) { shake('#rfTitle'); return; }
   if (!d.days.length) { toast('📅', 'En az bir gün seç'); return; }
   const fields = { title, note: d.note.trim(), days: [...d.days].sort((a, b) => a - b), size: d.size, every: d.every === 2 ? 2 : 1, color: d.color };
-  let id = d.id;
+  let id = d.id, rebuild = true;
   if (id) {
-    Object.assign(S.routines.find((x) => x.id === id), fields);
+    const r = S.routines.find((x) => x.id === id);
+    // Günler değişmediyse bekleyen işlere dokunma: ertelenmiş ya da atlanmış olanlar yerinde kalsın
+    rebuild = r.every !== fields.every || r.days.join() !== fields.days.join();
+    Object.assign(r, fields);
     S.todos.forEach((x) => { if (x.rid === id && !x.done) { x.title = title; x.size = d.size; } });
   } else { id = uid(); S.routines.push(Object.assign({ id }, fields)); }
-  rebuildRoutine(id);
-  syncRoutines();
+  if (rebuild) { rebuildRoutine(id); syncRoutines(); }
   closeSheet();
   after();
 }
@@ -1236,9 +1274,14 @@ const ACT = {
   'toggle-done': () => { ui.showDone = !ui.showDone; render(); },
   'toggle-later': () => { ui.showLater = !ui.showLater; render(); },
   'new-habit': () => openHabitForm(),
-  'new-todo': (el) => openTodoForm(null, el.dataset.k || null),
+  'new-todo': (el) => openTodoForm(null, el.dataset.k || null, el.dataset.home === '1'),
   'edit-habit': (el) => openHabitForm(el.dataset.id),
-  'edit-todo': (el) => openTodoForm(el.dataset.id),
+  // Rutinden gelen işe dokununca işin kendisi düzenlenir; tek seferlik görevde görev formu açılır
+  'edit-todo': (el) => {
+    const td = findT(el.dataset.id);
+    if (td && td.rid && S.routines.some((r) => r.id === td.rid)) openRoutineForm(td.rid, null, td.id);
+    else openTodoForm(el.dataset.id);
+  },
   'close-sheet': () => closeSheet(),
   'confirm-yes': () => { const fn = pendingConfirm; closeSheet(); if (fn) fn(); },
 
@@ -1282,6 +1325,11 @@ const ACT = {
   'rf-every': (el) => { draft.every = +el.dataset.v; drawRoutineForm(); },
   'rf-color': (el) => { const v = +el.dataset.v; draft.color = draft.color === v ? null : v; drawRoutineForm(); },
   'rf-save': () => saveRoutine(),
+  'rf-skip': () => {
+    const td = findT(draft.occId); if (!td) return;
+    S.todos = S.todos.filter((x) => x.id !== td.id);
+    closeSheet(); after(); toast('⏭️', 'Bu seferlik atlandı', td.title);
+  },
   'rf-delete': () => {
     const r = S.routines.find((x) => x.id === draft.id); if (!r) return;
     confirmSheet({
